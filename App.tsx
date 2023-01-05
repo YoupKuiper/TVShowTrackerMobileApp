@@ -15,14 +15,16 @@ import {
   QueryClientProvider,
   useQuery,
 } from '@tanstack/react-query';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  Button,
   Image,
   ScrollView,
   StatusBar,
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   useColorScheme,
   View,
 } from 'react-native';
@@ -47,14 +49,81 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { FlatList } from 'react-native-gesture-handler';
+import * as Keychain from 'react-native-keychain';
 
-const ListViewItem = ({ tvShow }) => {
+const LoginScreen = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async () => {
+    // login api call here
+    const response = fetch(`${TV_SHOW_TRACKER_API_BASE_URL}/SearchTVShows`, {
+      method: 'POST',
+      body: JSON.stringify({ searchString: title }),
+    });
+
+    console.log(await (await response).json());
+    const token = await (await response).json();
+
+    // await Keychain.setGenericPassword(username, token);
+    // setIsLoggedIn(true);
+    // setUserDetails({ token, username });
+  };
   return (
     <View>
+      <TextInput
+        placeholder="Username"
+        value={username}
+        onChangeText={setUsername}
+      />
+      <TextInput
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
+      <Button title="Sign in" onPress={handleLogin} />
+    </View>
+  );
+};
+
+const SignUpScreen = () => {
+  return (
+    <View>
+      <TextInput
+        placeholder="Username"
+        value={username}
+        onChangeText={setUsername}
+      />
+      <TextInput
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
+      <Button title="Sign in" onPress={() => signIn({ username, password })} />
+    </View>
+  );
+};
+
+const ListViewItem = ({ tvShow }) => {
+  const { colors } = useTheme();
+
+  return (
+    <View
+      style={{
+        height: 181,
+        width: '100%',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: 2,
+        borderColor: colors.border,
+        borderBottomWidth: 1,
+      }}>
       <Image
         style={{
-          width: '100%',
-          height: 500,
+          height: 180,
+          width: 120,
         }}
         source={{
           uri:
@@ -62,7 +131,9 @@ const ListViewItem = ({ tvShow }) => {
             'https://via.placeholder.com/400',
         }}
       />
-      {/* <Text>{tvShow.name}</Text> */}
+      <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
+        <Text style={{ color: colors.text }}>{tvShow.name}</Text>
+      </View>
     </View>
   );
 };
@@ -112,8 +183,16 @@ function HomeScreen({ darkMode, searchPopular = '' }) {
 }
 
 function SettingsScreen({ darkMode, toggleDarkMode }) {
+  const { colors } = useTheme();
+
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <View
+      style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+      <Text style={{ color: colors.text }}>Dark mode</Text>
       <Switch
         trackColor={{ false: '#767577', true: '#81b0ff' }}
         thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
@@ -158,6 +237,22 @@ const App = () => {
   const [searchTracked, setSearchTracked] = useState('');
   const toggleDarkMode = () => setDarkMode(previousState => !previousState);
 
+  useEffect(() => {
+    // try {
+    //   // Retrieve the credentials
+    //   // const credentials = await Keychain.getGenericPassword();
+    //   if (credentials) {
+    //     console.log(
+    //       'Credentials successfully loaded for user ' + credentials.username,
+    //     );
+    //   } else {
+    //     console.log('No credentials stored');
+    //   }
+    // } catch (error) {
+    //   console.log("Keychain couldn't be accessed!", error);
+    // }
+  }, []);
+
   const darkTheme = {
     dark: true,
     colors: {
@@ -165,7 +260,7 @@ const App = () => {
       background: 'rgb(31, 41, 55)',
       card: 'rgb(255, 255, 255)',
       text: 'rgb(255, 255, 255)',
-      border: 'rgb(199, 199, 204)',
+      border: 'rgb(156, 163, 175)',
       notification: 'rgb(255, 69, 58)',
     },
   };
@@ -177,7 +272,7 @@ const App = () => {
       background: 'rgb(255, 255, 255)',
       card: 'rgb(255, 255, 255)',
       text: 'rgb(0, 0, 0)',
-      border: 'rgb(199, 199, 204)',
+      border: 'rgb(156, 163, 175)',
       notification: 'rgb(255, 69, 58)',
     },
   };
@@ -222,7 +317,7 @@ const App = () => {
             tabBarStyle: {
               backgroundColor: currentTheme.colors.background,
             },
-            tabBarIcon: ({ focused, color, size }) => {
+            tabBarIcon: ({ focused, size }) => {
               let iconName;
 
               if (route.name === 'Home') {
@@ -235,32 +330,48 @@ const App = () => {
                 iconName = focused ? 'ios-add' : 'ios-add-outline';
               }
               return (
-                <Ionicons name={iconName} size={size} color={Colors.blue} />
+                <Ionicons
+                  name={iconName}
+                  size={size}
+                  color={currentTheme.colors.text}
+                />
               );
             },
             tabBarActiveTintColor: 'tomato',
             tabBarInactiveTintColor: currentTheme.colors.text,
           })}>
-          <Tab.Screen
-            name="Home"
-            children={() => <HomeScreen darkMode={darkMode} />}
-            style={{
-              backgroundColor: 'blue',
-            }}
-          />
-          <Tab.Screen
-            name="Watchlist"
-            children={() => <HomeScreen darkMode={darkMode} />}
-          />
-          <Tab.Screen
-            name="Settings"
-            children={() => (
-              <SettingsScreen
-                darkMode={darkMode}
-                toggleDarkMode={toggleDarkMode}
+          {loggedInUser ? (
+            <>
+              <Tab.Screen
+                name="Home"
+                children={() => <HomeScreen darkMode={darkMode} />}
               />
-            )}
-          />
+              <Tab.Screen
+                name="Watchlist"
+                children={() => <HomeScreen darkMode={darkMode} />}
+              />
+              <Tab.Screen
+                name="Settings"
+                children={() => (
+                  <SettingsScreen
+                    darkMode={darkMode}
+                    toggleDarkMode={toggleDarkMode}
+                  />
+                )}
+              />
+            </>
+          ) : (
+            <>
+              <Tab.Screen
+                name="Login"
+                children={() => <LoginScreen darkMode={darkMode} />}
+              />
+              <Tab.Screen
+                name="Sign up"
+                children={() => <SignUpScreen darkMode={darkMode} />}
+              />
+            </>
+          )}
         </Tab.Navigator>
       </QueryClientProvider>
     </NavigationContainer>
