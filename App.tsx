@@ -9,7 +9,7 @@
  */
 
 import { TV_SHOW_TRACKER_API_BASE_URL } from '@env';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useTheme } from '@react-navigation/native';
 import {
   QueryClient,
   QueryClientProvider,
@@ -21,6 +21,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  Switch,
   Text,
   useColorScheme,
   View,
@@ -67,6 +68,8 @@ const ListViewItem = ({ tvShow }) => {
 };
 
 function HomeScreen({ darkMode, searchPopular = '' }) {
+  const { colors } = useTheme();
+
   const getPopularTVShows = async (title: string = ''): Promise<any[]> => {
     // If title is empty, all popular shows will be fetched
     try {
@@ -97,28 +100,27 @@ function HomeScreen({ darkMode, searchPopular = '' }) {
     <View>
       <StatusBar
         barStyle={darkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={styles.backgroundStyle.backgroundColor}
+        backgroundColor={colors.background}
       />
 
       <FlatList
         data={queryPopularTVShows.data}
-        renderItem={item => <ListViewItem tvShow={item.item} />}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: darkMode ? Colors.black : Colors.white,
-          }}>
-          <LearnMoreLinks />
-        </View>
-      </FlatList>
+        renderItem={item => <ListViewItem tvShow={item.item} />}
+      />
     </View>
   );
 }
 
-function SettingsScreen({ darkMode }) {
+function SettingsScreen({ darkMode, toggleDarkMode }) {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Settings!</Text>
+      <Switch
+        trackColor={{ false: '#767577', true: '#81b0ff' }}
+        thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
+        ios_backgroundColor="#3e3e3e"
+        onValueChange={toggleDarkMode}
+        value={darkMode}
+      />
     </View>
   );
 }
@@ -154,12 +156,34 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchPopular, setSearchPopular] = useState('');
   const [searchTracked, setSearchTracked] = useState('');
+  const toggleDarkMode = () => setDarkMode(previousState => !previousState);
 
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const darkTheme = {
+    dark: true,
+    colors: {
+      primary: 'rgb(31, 41, 55)',
+      background: 'rgb(31, 41, 55)',
+      card: 'rgb(255, 255, 255)',
+      text: 'rgb(255, 255, 255)',
+      border: 'rgb(199, 199, 204)',
+      notification: 'rgb(255, 69, 58)',
+    },
   };
+
+  const lightTheme = {
+    dark: false,
+    colors: {
+      primary: 'rgb(31, 41, 55)',
+      background: 'rgb(255, 255, 255)',
+      card: 'rgb(255, 255, 255)',
+      text: 'rgb(0, 0, 0)',
+      border: 'rgb(199, 199, 204)',
+      notification: 'rgb(255, 69, 58)',
+    },
+  };
+
+  const currentTheme = darkMode ? darkTheme : lightTheme;
+  // const isDarkMode = useColorScheme() === 'dark';
 
   // const getTrackedTVShows = async (searchString: string): Promise<TVShow[]> => {
   //   try {
@@ -188,10 +212,16 @@ const App = () => {
   // );
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={darkMode ? darkTheme : lightTheme}>
       <QueryClientProvider client={queryClient}>
         <Tab.Navigator
           screenOptions={({ route }) => ({
+            headerStyle: {
+              backgroundColor: currentTheme.colors.background,
+            },
+            tabBarStyle: {
+              backgroundColor: currentTheme.colors.background,
+            },
             tabBarIcon: ({ focused, color, size }) => {
               let iconName;
 
@@ -202,26 +232,34 @@ const App = () => {
               } else if (route.name === 'Settings') {
                 iconName = focused ? 'ios-list' : 'ios-list-outline';
               } else if (route.name === 'Watchlist') {
-                iconName = focused ? 'ios-add' : 'ios-add';
+                iconName = focused ? 'ios-add' : 'ios-add-outline';
               }
               return (
                 <Ionicons name={iconName} size={size} color={Colors.blue} />
               );
             },
             tabBarActiveTintColor: 'tomato',
-            tabBarInactiveTintColor: 'gray',
+            tabBarInactiveTintColor: currentTheme.colors.text,
           })}>
           <Tab.Screen
             name="Home"
             children={() => <HomeScreen darkMode={darkMode} />}
+            style={{
+              backgroundColor: 'blue',
+            }}
           />
           <Tab.Screen
-            name="WatchList"
+            name="Watchlist"
             children={() => <HomeScreen darkMode={darkMode} />}
           />
           <Tab.Screen
             name="Settings"
-            children={() => <SettingsScreen darkMode={darkMode} />}
+            children={() => (
+              <SettingsScreen
+                darkMode={darkMode}
+                toggleDarkMode={toggleDarkMode}
+              />
+            )}
           />
         </Tab.Navigator>
       </QueryClientProvider>
@@ -230,24 +268,8 @@ const App = () => {
 };
 
 const styles = StyleSheet.create({
-  // sectionContainer: {
-  //   marginTop: 32,
-  //   paddingHorizontal: 24,
-  // },
-  // sectionTitle: {
-  //   fontSize: 24,
-  //   fontWeight: '600',
-  // },
-  // sectionDescription: {
-  //   marginTop: 8,
-  //   fontSize: 18,
-  //   fontWeight: '400',
-  // },
-  // highlight: {
-  //   fontWeight: '700',
-  // },
   backgroundStyle: {
-    backgroundColor: 'blue',
+    backgroundColor: Colors.darker,
   },
 });
 
