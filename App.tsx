@@ -10,6 +10,7 @@
 
 import { TV_SHOW_TRACKER_API_BASE_URL } from '@env';
 import { NavigationContainer, useTheme } from '@react-navigation/native';
+import SplashScreen from 'react-native-splash-screen';
 import {
   QueryClient,
   QueryClientProvider,
@@ -25,6 +26,7 @@ import {
   Switch,
   Text,
   TextInput,
+  TouchableOpacity,
   useColorScheme,
   View,
 } from 'react-native';
@@ -40,6 +42,7 @@ import {
   DEFAULT_USER,
   IMAGES_BASE_URL,
   IMAGE_DEFAULT_SIZE,
+  JWT_TOKEN_KEY,
   PAGE_NAME_SEARCH,
   USER_KEY,
 } from './constants';
@@ -50,16 +53,77 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { FlatList } from 'react-native-gesture-handler';
 import * as Keychain from 'react-native-keychain';
+import { SearchBar } from '@rneui/themed';
 
-const LoginScreen = () => {
-  const [username, setUsername] = useState('');
+const LoginScreen = ({ setIsLoggedIn }) => {
+  const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
 
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
   const handleLogin = async () => {
+    try {
+      // login api call here
+      const response = fetch(`${TV_SHOW_TRACKER_API_BASE_URL}/Login`, {
+        method: 'POST',
+        body: JSON.stringify({ emailAddress, password }),
+      });
+
+      const responseData = await (await response).json();
+      await AsyncStorage.setItem(JWT_TOKEN_KEY, responseData.token);
+      setIsLoggedIn(true);
+    } catch (error) {
+      console.log(error);
+    }
+
+    // setUserDetails({ token, username });
+  };
+
+  return (
+    <View style={styles.container}>
+      <Image style={styles.image} source={require('./assets/logo.png')} />
+      <StatusBar style="auto" />
+      <View style={styles.inputView}>
+        <TextInput
+          style={styles.TextInput}
+          placeholder="Email Address"
+          placeholderTextColor="#003f5c"
+          onChangeText={email => setEmailAddress(email)}
+        />
+      </View>
+      <View style={styles.inputView}>
+        <TextInput
+          style={styles.TextInput}
+          placeholder="Password"
+          placeholderTextColor="#003f5c"
+          secureTextEntry={true}
+          onChangeText={password => setPassword(password)}
+        />
+      </View>
+      <TouchableOpacity>
+        <Text style={styles.forgot_button}>Forgot Password?</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
+        <Text style={styles.loginText}>LOGIN</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const SignUpScreen = () => {
+  const [emailAddress, setEmailAddress] = useState('');
+  const [password, setPassword] = useState('');
+  const [repeatedPassword, setRepeatedPassword] = useState('');
+
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
+  const handleSignUp = async () => {
     // login api call here
-    const response = fetch(`${TV_SHOW_TRACKER_API_BASE_URL}/SearchTVShows`, {
+    const response = fetch(`${TV_SHOW_TRACKER_API_BASE_URL}/CreateAccount`, {
       method: 'POST',
-      body: JSON.stringify({ searchString: title }),
+      body: JSON.stringify({ emailAddress, password }),
     });
 
     console.log(await (await response).json());
@@ -70,38 +134,38 @@ const LoginScreen = () => {
     // setUserDetails({ token, username });
   };
   return (
-    <View>
-      <TextInput
-        placeholder="Username"
-        value={username}
-        onChangeText={setUsername}
-      />
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <Button title="Sign in" onPress={handleLogin} />
-    </View>
-  );
-};
-
-const SignUpScreen = () => {
-  return (
-    <View>
-      <TextInput
-        placeholder="Username"
-        value={username}
-        onChangeText={setUsername}
-      />
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <Button title="Sign in" onPress={() => signIn({ username, password })} />
+    <View style={styles.container}>
+      <Image style={styles.image} source={require('./assets/logo.png')} />
+      <StatusBar style="auto" />
+      <View style={styles.inputView}>
+        <TextInput
+          style={styles.TextInput}
+          placeholder="Email address"
+          placeholderTextColor="#003f5c"
+          onChangeText={email => setEmailAddress(email)}
+        />
+      </View>
+      <View style={styles.inputView}>
+        <TextInput
+          style={styles.TextInput}
+          placeholder="Password"
+          placeholderTextColor="#003f5c"
+          secureTextEntry={true}
+          onChangeText={input => setPassword(input)}
+        />
+      </View>
+      <View style={styles.inputView}>
+        <TextInput
+          style={styles.TextInput}
+          placeholder="Repeat password"
+          placeholderTextColor="#003f5c"
+          secureTextEntry={true}
+          onChangeText={input => setRepeatedPassword(input)}
+        />
+      </View>
+      <TouchableOpacity style={styles.loginBtn} onPress={handleSignUp}>
+        <Text style={styles.loginText}>SIGN UP</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -138,8 +202,9 @@ const ListViewItem = ({ tvShow }) => {
   );
 };
 
-function HomeScreen({ darkMode, searchPopular = '' }) {
+function HomeScreen({ darkMode }) {
   const { colors } = useTheme();
+  const [searchString, setsearchString] = useState('');
 
   const getPopularTVShows = async (title: string = ''): Promise<any[]> => {
     // If title is empty, all popular shows will be fetched
@@ -156,8 +221,8 @@ function HomeScreen({ darkMode, searchPopular = '' }) {
   };
 
   const queryPopularTVShows = useQuery(
-    ['popular', searchPopular],
-    () => getPopularTVShows(searchPopular),
+    ['popular', searchString],
+    () => getPopularTVShows(searchString),
     {
       // enabled: !isTrackedList,
       staleTime: 60000,
@@ -173,7 +238,11 @@ function HomeScreen({ darkMode, searchPopular = '' }) {
         barStyle={darkMode ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
-
+      <SearchBar
+        placeholder="Search..."
+        onChangeText={setsearchString}
+        value={searchString}
+      />
       <FlatList
         data={queryPopularTVShows.data}
         renderItem={item => <ListViewItem tvShow={item.item} />}
@@ -182,8 +251,65 @@ function HomeScreen({ darkMode, searchPopular = '' }) {
   );
 }
 
-function SettingsScreen({ darkMode, toggleDarkMode }) {
+function WatchlistScreen({ darkMode }) {
   const { colors } = useTheme();
+  const [searchString, setsearchString] = useState('');
+
+  const getTrackedTVShows = async (searchString: string): Promise<any> => {
+    try {
+      const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
+      const response = fetch(
+        `${TV_SHOW_TRACKER_API_BASE_URL}/GetTrackedTVShows`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ token, searchString }),
+        },
+      );
+      const tvShows = await (await response).json();
+      return tvShows;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const queryTrackedTVShows = useQuery(
+    ['tracked', searchString],
+    () => getTrackedTVShows(searchString),
+    {
+      staleTime: 60000,
+      onError: error => {
+        console.log('error happened');
+      },
+    },
+  );
+
+  return (
+    <View>
+      <StatusBar
+        barStyle={darkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
+      <SearchBar
+        placeholder="Search..."
+        onChangeText={setsearchString}
+        value={searchString}
+      />
+      <FlatList
+        data={queryTrackedTVShows.data}
+        renderItem={item => <ListViewItem tvShow={item.item} />}
+      />
+    </View>
+  );
+}
+
+function SettingsScreen({ darkMode, toggleDarkMode, setIsLoggedIn }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem(JWT_TOKEN_KEY);
+    setIsLoggedIn(false);
+  };
 
   return (
     <View
@@ -200,6 +326,9 @@ function SettingsScreen({ darkMode, toggleDarkMode }) {
         onValueChange={toggleDarkMode}
         value={darkMode}
       />
+      <TouchableOpacity style={styles.loginBtn} onPress={handleLogout}>
+        <Text style={styles.loginText}>LOGOUT</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -235,23 +364,9 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchPopular, setSearchPopular] = useState('');
   const [searchTracked, setSearchTracked] = useState('');
-  const toggleDarkMode = () => setDarkMode(previousState => !previousState);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  useEffect(() => {
-    // try {
-    //   // Retrieve the credentials
-    //   // const credentials = await Keychain.getGenericPassword();
-    //   if (credentials) {
-    //     console.log(
-    //       'Credentials successfully loaded for user ' + credentials.username,
-    //     );
-    //   } else {
-    //     console.log('No credentials stored');
-    //   }
-    // } catch (error) {
-    //   console.log("Keychain couldn't be accessed!", error);
-    // }
-  }, []);
+  const toggleDarkMode = () => setDarkMode(previousState => !previousState);
 
   const darkTheme = {
     dark: true,
@@ -278,33 +393,26 @@ const App = () => {
   };
 
   const currentTheme = darkMode ? darkTheme : lightTheme;
-  // const isDarkMode = useColorScheme() === 'dark';
 
-  // const getTrackedTVShows = async (searchString: string): Promise<TVShow[]> => {
-  //   try {
-  //     const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
-  //     const { data } = await axios.post<TVShow[]>(
-  //       `${TV_SHOW_TRACKER_API_BASE_URL}/GetTrackedTVShows`,
-  //       { token, searchString },
-  //     );
+  useEffect(() => {
+    const getLoggedInState = async () => {
+      try {
+        const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
+        if (token) {
+          setIsLoggedIn(true);
+        }
+      } catch (error) {
+        console.log(error);
+      }
 
-  //     return data;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // };
+      SplashScreen.hide();
+    };
 
-  // const queryTrackedTVShows = useQuery(
-  //   ['tracked', searchTracked],
-  //   () => getTrackedTVShows(searchTracked),
-  //   {
-  //     enabled: isLoggedIn,
-  //     staleTime: 60000,
-  //     onError: error => {
-  //       console.log('error happened');
-  //     },
-  //   },
-  // );
+    // call the function
+    getLoggedInState()
+      // make sure to catch any error
+      .catch(console.error);
+  }, []);
 
   return (
     <NavigationContainer theme={darkMode ? darkTheme : lightTheme}>
@@ -328,6 +436,12 @@ const App = () => {
                 iconName = focused ? 'ios-list' : 'ios-list-outline';
               } else if (route.name === 'Watchlist') {
                 iconName = focused ? 'ios-add' : 'ios-add-outline';
+              } else if (route.name === 'Login') {
+                iconName = focused ? 'ios-key' : 'ios-key-outline';
+              } else if (route.name === 'Sign up') {
+                iconName = focused
+                  ? 'ios-person-add'
+                  : 'ios-person-add-outline';
               }
               return (
                 <Ionicons
@@ -340,7 +454,7 @@ const App = () => {
             tabBarActiveTintColor: 'tomato',
             tabBarInactiveTintColor: currentTheme.colors.text,
           })}>
-          {loggedInUser ? (
+          {isLoggedIn ? (
             <>
               <Tab.Screen
                 name="Home"
@@ -348,7 +462,7 @@ const App = () => {
               />
               <Tab.Screen
                 name="Watchlist"
-                children={() => <HomeScreen darkMode={darkMode} />}
+                children={() => <WatchlistScreen darkMode={darkMode} />}
               />
               <Tab.Screen
                 name="Settings"
@@ -356,6 +470,7 @@ const App = () => {
                   <SettingsScreen
                     darkMode={darkMode}
                     toggleDarkMode={toggleDarkMode}
+                    setIsLoggedIn={setIsLoggedIn}
                   />
                 )}
               />
@@ -364,12 +479,9 @@ const App = () => {
             <>
               <Tab.Screen
                 name="Login"
-                children={() => <LoginScreen darkMode={darkMode} />}
+                children={() => <LoginScreen setIsLoggedIn={setIsLoggedIn} />}
               />
-              <Tab.Screen
-                name="Sign up"
-                children={() => <SignUpScreen darkMode={darkMode} />}
-              />
+              <Tab.Screen name="Sign up" children={() => <SignUpScreen />} />
             </>
           )}
         </Tab.Navigator>
@@ -378,10 +490,44 @@ const App = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  backgroundStyle: {
-    backgroundColor: Colors.darker,
-  },
-});
+const makeStyles = (colors: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#fff',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    image: {
+      marginBottom: 40,
+    },
+    inputView: {
+      backgroundColor: '#FFC0CB',
+      borderRadius: 30,
+      width: '70%',
+      height: 45,
+      marginBottom: 20,
+      alignItems: 'center',
+    },
+    TextInput: {
+      height: 50,
+      flex: 1,
+      padding: 10,
+      marginLeft: 20,
+    },
+    forgot_button: {
+      height: 30,
+      marginBottom: 30,
+    },
+    loginBtn: {
+      width: '80%',
+      borderRadius: 25,
+      height: 50,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 40,
+      backgroundColor: '#FF1493',
+    },
+  });
 
 export default App;
