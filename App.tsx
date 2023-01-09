@@ -12,11 +12,7 @@ import { TV_SHOW_TRACKER_API_BASE_URL } from '@env';
 import { NavigationContainer, useTheme } from '@react-navigation/native';
 import SplashScreen from 'react-native-splash-screen';
 import Toast from 'react-native-toast-message';
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQuery,
-} from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -33,11 +29,7 @@ import {
   View,
 } from 'react-native';
 
-import {
-  Colors,
-  Header,
-  LearnMoreLinks,
-} from 'react-native/Libraries/NewAppScreen';
+import { Colors, Header, LearnMoreLinks } from 'react-native/Libraries/NewAppScreen';
 import {
   CURRENT_PAGE_KEY,
   DARK_MODE_KEY,
@@ -70,13 +62,10 @@ const LoginScreen = ({ setIsLoggedIn }) => {
     try {
       // login api call here
       setIsLoading(true);
-      const response: any = await fetcher(
-        `${TV_SHOW_TRACKER_API_BASE_URL}/Login`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ emailAddress, password }),
-        },
-      );
+      const response: any = await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/Login`, {
+        method: 'POST',
+        body: JSON.stringify({ emailAddress, password }),
+      });
 
       await AsyncStorage.setItem(JWT_TOKEN_KEY, response.token);
       setIsLoggedIn(true);
@@ -143,7 +132,11 @@ const SignUpScreen = () => {
   const handleSignUp = async () => {
     try {
       if (password !== repeatedPassword) {
-        return console.log('passwords not equal');
+        return Toast.show({
+          type: 'error',
+          text1: 'Failed',
+          text2: 'Passwords are not equal',
+        });
       }
       setIsLoading(true);
       await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/CreateAccount`, {
@@ -176,8 +169,8 @@ const SignUpScreen = () => {
     <View style={styles.container}>
       <Text style={{ color: colors.text }}>Success!</Text>
       <Text style={{ color: colors.text }}>
-        Your account has been created, please verify your email address by
-        clicking the link in the email in your inbox
+        Your account has been created, please verify your email address by clicking the link in the
+        email in your inbox
       </Text>
     </View>
   ) : (
@@ -224,69 +217,126 @@ const SignUpScreen = () => {
   );
 };
 
-const ListViewItem = ({
-  tvShow,
-  isWatchlistItem,
-  handleButtonClick,
-  shouldShowButton,
-}) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const { colors } = useTheme();
-  const iconName = isWatchlistItem ? 'ios-remove' : 'ios-add';
-  const title = isWatchlistItem ? 'remove' : 'add';
-  const buttonColor = isWatchlistItem ? 'red' : 'blue';
+import { PureComponent } from 'react';
+class ListViewItem extends PureComponent<any> {
+  constructor(props) {
+    super(props);
+    this.state = {
+      isLoading: false,
+    };
+  }
 
-  const onButtonPress = async tvShow => {
-    setIsLoading(true);
-    await handleButtonClick(tvShow);
-    setIsLoading(false);
-  };
-
-  return (
-    <View
-      style={{
-        height: 181,
-        width: '100%',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginBottom: 2,
-        borderColor: colors.border,
-        borderBottomWidth: 1,
-      }}>
-      <Image
+  render() {
+    const iconName = this.props.isWatchlistItem ? 'ios-remove' : 'ios-add';
+    const title = this.props.isWatchlistItem ? 'remove' : 'add';
+    const buttonColor = this.props.isWatchlistItem ? 'red' : 'blue';
+    const onButtonPress = async tvShow => {
+      this.setState({ isLoading: true });
+      await this.props.handleButtonClick(tvShow);
+      this.setState({ isLoading: false });
+    };
+    return (
+      <View
         style={{
-          height: 180,
-          width: 120,
-        }}
-        source={{
-          uri:
-            IMAGES_BASE_URL + IMAGE_DEFAULT_SIZE + tvShow.poster_path ||
-            'https://via.placeholder.com/400',
-        }}
-      />
-      <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
-        <Text style={{ color: colors.text }}>{tvShow.name}</Text>
-        {shouldShowButton && (
-          <ThemedButton
-            title={title}
-            color={buttonColor}
-            onPress={() => onButtonPress(tvShow)}
-            icon={
-              isLoading ? (
-                <ActivityIndicator />
-              ) : (
-                <Ionicons name={iconName} size={15} color={colors.text} />
-              )
-            }
-            iconRight
-          />
-        )}
+          height: 181,
+          width: '100%',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          marginBottom: 2,
+          borderColor: this.props.colors.border,
+          borderBottomWidth: 1,
+        }}>
+        <Image
+          style={{
+            height: 180,
+            width: 120,
+          }}
+          source={{
+            uri:
+              IMAGES_BASE_URL + IMAGE_DEFAULT_SIZE + this.props.tvShow.poster_path ||
+              'https://via.placeholder.com/400',
+          }}
+        />
+        <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
+          <Text style={{ color: this.props.colors.text }}>{this.props.tvShow.name}</Text>
+          {this.props.shouldShowButton ? (
+            <ThemedButton
+              title={title}
+              color={buttonColor}
+              onPress={() => onButtonPress(this.props.tvShow)}
+              icon={
+                this.state.isLoading ? (
+                  <ActivityIndicator />
+                ) : (
+                  <Ionicons name={iconName} size={15} color={this.props.colors.text} />
+                )
+              }
+              iconRight
+            />
+          ) : null}
+        </View>
       </View>
-    </View>
-  );
-};
+    );
+  }
+}
+// const ListViewItem = ({ tvShow, isWatchlistItem, handleButtonClick, shouldShowButton }) => {
+//   const [isLoading, setIsLoading] = useState(false);
+//   const { colors } = useTheme();
+//   const iconName = isWatchlistItem ? 'ios-remove' : 'ios-add';
+//   const title = isWatchlistItem ? 'remove' : 'add';
+//   const buttonColor = isWatchlistItem ? 'red' : 'blue';
 
-function HomeScreen({ darkMode }) {
+//   const onButtonPress = async tvShow => {
+//     setIsLoading(true);
+//     await handleButtonClick(tvShow);
+//     setIsLoading(false);
+//   };
+
+//   return (
+//     <View
+//       style={{
+//         height: 181,
+//         width: '100%',
+//         flexDirection: 'row',
+//         flexWrap: 'wrap',
+//         marginBottom: 2,
+//         borderColor: colors.border,
+//         borderBottomWidth: 1,
+//       }}>
+//       <Image
+//         style={{
+//           height: 180,
+//           width: 120,
+//         }}
+//         source={{
+//           uri:
+//             IMAGES_BASE_URL + IMAGE_DEFAULT_SIZE + tvShow.poster_path ||
+//             'https://via.placeholder.com/400',
+//         }}
+//       />
+//       <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
+//         <Text style={{ color: colors.text }}>{tvShow.name}</Text>
+//         {shouldShowButton ? (
+//           <ThemedButton
+//             title={title}
+//             color={buttonColor}
+//             onPress={() => onButtonPress(tvShow)}
+//             icon={
+//               isLoading ? (
+//                 <ActivityIndicator />
+//               ) : (
+//                 <Ionicons name={iconName} size={15} color={colors.text} />
+//               )
+//             }
+//             iconRight
+//           />
+//         ) : null}
+//       </View>
+//     </View>
+//   );
+// };
+
+function HomeScreen({ darkMode, refresh, setRefresh }) {
   const { colors } = useTheme();
   const [searchString, setsearchString] = useState('');
 
@@ -297,29 +347,32 @@ function HomeScreen({ darkMode }) {
       staleTime: 60000,
     },
   );
-  const queryTrackedTVShows = useQuery(
-    ['tracked', ''],
-    () => getTrackedTVShows(''),
-    { staleTime: 60000 },
-  );
+  const queryTrackedTVShows = useQuery(['tracked', ''], () => getTrackedTVShows(''), {
+    staleTime: 60000,
+  });
+
+  const isAlreadyInTrackedList = (tvShow, trackedTVShows) => {
+    if (trackedTVShows) {
+      return !!trackedTVShows.some(trackedShow => trackedShow.id === tvShow.id);
+    }
+    return false;
+  };
 
   const addShow = async tvShow => {
     try {
       const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
-      const response: any = await fetcher(
-        `${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            token,
-            updateObject: {
-              trackedTVShows: [...queryTrackedTVShows.data, tvShow],
-            },
-          }),
-        },
-      );
+      const response: any = await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
+        method: 'POST',
+        body: JSON.stringify({
+          token,
+          updateObject: {
+            trackedTVShows: [...queryTrackedTVShows.data, tvShow],
+          },
+        }),
+      });
 
       queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
+      setRefresh(oldrefresh => !oldrefresh);
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -335,67 +388,61 @@ function HomeScreen({ darkMode }) {
         barStyle={darkMode ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
-      <SearchBar
-        placeholder="Search..."
-        onChangeText={setsearchString}
-        value={searchString}
-      />
+      <SearchBar placeholder="Search..." onChangeText={setsearchString} value={searchString} />
 
       {queryPopularTVShows.isLoading ? (
         <ActivityIndicator />
       ) : (
         <FlatList
           data={queryPopularTVShows.data}
-          renderItem={item => (
-            <ListViewItem
-              tvShow={item.item}
-              isWatchlistItem={false}
-              shouldShowButton={true}
-              handleButtonClick={addShow}
-            />
-          )}
+          keyExtractor={item => item.id}
+          extraData={refresh}
+          renderItem={item => {
+            return (
+              <ListViewItem
+                tvShow={item.item}
+                isWatchlistItem={false}
+                handleButtonClick={addShow}
+                shouldShowButton={!isAlreadyInTrackedList(item.item, queryTrackedTVShows.data)}
+                colors={colors}
+              />
+            );
+          }}
         />
       )}
     </View>
   );
 }
 
-function WatchlistScreen({ darkMode }) {
+function WatchlistScreen({ darkMode, refresh, setRefresh }) {
   const { colors } = useTheme();
   const [searchString, setsearchString] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const queryTrackedTVShows = useQuery(
     ['tracked', searchString],
     () => getTrackedTVShows(searchString),
     {
       staleTime: 60000,
-      onError: error => {
-        console.log('error happened');
-      },
     },
   );
 
   const removeShow = async tvShow => {
     try {
-      setIsLoading(true);
       const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
       const newTvShows = queryTrackedTVShows.data.filter(
         trackedTVShow => trackedTVShow.id !== tvShow.id,
       );
-      const response: any = await fetcher(
-        `${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            token,
-            updateObject: {
-              trackedTVShows: newTvShows,
-            },
-          }),
-        },
-      );
+      const response: any = await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
+        method: 'POST',
+        body: JSON.stringify({
+          token,
+          updateObject: {
+            trackedTVShows: newTvShows,
+          },
+        }),
+      });
       queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
+      setRefresh(oldrefresh => !oldrefresh);
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -403,7 +450,6 @@ function WatchlistScreen({ darkMode }) {
         text2: 'Failed to remove show from watchlist',
       });
     }
-    setIsLoading(false);
   };
 
   return (
@@ -412,22 +458,21 @@ function WatchlistScreen({ darkMode }) {
         barStyle={darkMode ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
-      <SearchBar
-        placeholder="Search..."
-        onChangeText={setsearchString}
-        value={searchString}
-      />
+      <SearchBar placeholder="Search..." onChangeText={setsearchString} value={searchString} />
       {queryTrackedTVShows.isLoading ? (
         <ActivityIndicator />
       ) : (
         <FlatList
           data={queryTrackedTVShows.data}
+          keyExtractor={item => item.id}
+          extraData={refresh}
           renderItem={item => (
             <ListViewItem
               tvShow={item.item}
               isWatchlistItem={true}
               shouldShowButton={true}
               handleButtonClick={removeShow}
+              colors={colors}
             />
           )}
         />
@@ -479,18 +524,9 @@ const getDarkModeStateFromLocalStorage = async () => {
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [darkMode, setDarkMode] = useStickyState(
-    getDarkModeStateFromLocalStorage,
-    DARK_MODE_KEY,
-  );
-  const [loggedInUser, setLoggedInUser] = useStickyState(
-    DEFAULT_USER,
-    USER_KEY,
-  );
-  const [currentPage, setCurrentPage] = useStickyState(
-    PAGE_NAME_SEARCH,
-    CURRENT_PAGE_KEY,
-  );
+  const [darkMode, setDarkMode] = useStickyState(getDarkModeStateFromLocalStorage, DARK_MODE_KEY);
+  const [loggedInUser, setLoggedInUser] = useStickyState(DEFAULT_USER, USER_KEY);
+  const [currentPage, setCurrentPage] = useStickyState(PAGE_NAME_SEARCH, CURRENT_PAGE_KEY);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
   // const [tvShowDetailsToShow, setTVShowDetailsToShow] =
@@ -499,6 +535,7 @@ const App = () => {
   const [searchPopular, setSearchPopular] = useState('');
   const [searchTracked, setSearchTracked] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [refresh, setRefresh] = useState(false);
 
   const toggleDarkMode = () => setDarkMode(previousState => !previousState);
 
@@ -538,7 +575,6 @@ const App = () => {
       } catch (error) {
         console.log(error);
       }
-
       SplashScreen.hide();
     };
 
@@ -563,9 +599,7 @@ const App = () => {
               let iconName;
 
               if (route.name === 'Home') {
-                iconName = focused
-                  ? 'ios-information-circle'
-                  : 'ios-information-circle-outline';
+                iconName = focused ? 'ios-information-circle' : 'ios-information-circle-outline';
               } else if (route.name === 'Settings') {
                 iconName = focused ? 'ios-list' : 'ios-list-outline';
               } else if (route.name === 'Watchlist') {
@@ -573,17 +607,9 @@ const App = () => {
               } else if (route.name === 'Login') {
                 iconName = focused ? 'ios-key' : 'ios-key-outline';
               } else if (route.name === 'Sign up') {
-                iconName = focused
-                  ? 'ios-person-add'
-                  : 'ios-person-add-outline';
+                iconName = focused ? 'ios-person-add' : 'ios-person-add-outline';
               }
-              return (
-                <Ionicons
-                  name={iconName}
-                  size={size}
-                  color={currentTheme.colors.text}
-                />
-              );
+              return <Ionicons name={iconName} size={size} color={currentTheme.colors.text} />;
             },
             tabBarActiveTintColor: 'tomato',
             tabBarInactiveTintColor: currentTheme.colors.text,
@@ -592,11 +618,15 @@ const App = () => {
             <>
               <Tab.Screen
                 name="Home"
-                children={() => <HomeScreen darkMode={darkMode} />}
+                children={() => (
+                  <HomeScreen darkMode={darkMode} refresh={refresh} setRefresh={setRefresh} />
+                )}
               />
               <Tab.Screen
                 name="Watchlist"
-                children={() => <WatchlistScreen darkMode={darkMode} />}
+                children={() => (
+                  <WatchlistScreen darkMode={darkMode} refresh={refresh} setRefresh={setRefresh} />
+                )}
               />
               <Tab.Screen
                 name="Settings"
