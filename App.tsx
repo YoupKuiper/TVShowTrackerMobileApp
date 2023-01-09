@@ -104,6 +104,7 @@ const LoginScreen = ({ setIsLoggedIn }) => {
           placeholder="Email Address"
           textAlign={'center'}
           placeholderTextColor="#003f5c"
+          value={emailAddress}
           onChangeText={email => setEmailAddress(email)}
           autoCapitalize={'none'}
         />
@@ -115,6 +116,7 @@ const LoginScreen = ({ setIsLoggedIn }) => {
           textAlign={'center'}
           placeholderTextColor="#003f5c"
           secureTextEntry
+          value={password}
           onChangeText={password => setPassword(password)}
         />
       </View>
@@ -190,6 +192,7 @@ const SignUpScreen = () => {
           placeholderTextColor="#003f5c"
           onChangeText={email => setEmailAddress(email)}
           autoCapitalize="none"
+          value={emailAddress}
         />
       </View>
       <View style={styles.inputView}>
@@ -199,6 +202,7 @@ const SignUpScreen = () => {
           placeholder="Password"
           placeholderTextColor="#003f5c"
           secureTextEntry
+          value={password}
           onChangeText={input => setPassword(input)}
         />
       </View>
@@ -209,6 +213,7 @@ const SignUpScreen = () => {
           placeholder="Repeat password"
           placeholderTextColor="#003f5c"
           secureTextEntry
+          value={repeatedPassword}
           onChangeText={input => setRepeatedPassword(input)}
         />
       </View>
