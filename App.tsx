@@ -11,6 +11,7 @@
 import { TV_SHOW_TRACKER_API_BASE_URL } from '@env';
 import { NavigationContainer, useTheme } from '@react-navigation/native';
 import SplashScreen from 'react-native-splash-screen';
+import Toast from 'react-native-toast-message';
 import {
   QueryClient,
   QueryClientProvider,
@@ -18,6 +19,7 @@ import {
 } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Button,
   Image,
   ScrollView,
@@ -53,11 +55,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { FlatList } from 'react-native-gesture-handler';
 import * as Keychain from 'react-native-keychain';
-import { SearchBar } from '@rneui/themed';
+import { Icon, SearchBar, Button as ThemedButton } from '@rneui/themed';
+import { fetcher, getPopularTVShows, getTrackedTVShows } from './api';
 
 const LoginScreen = ({ setIsLoggedIn }) => {
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -65,39 +69,47 @@ const LoginScreen = ({ setIsLoggedIn }) => {
   const handleLogin = async () => {
     try {
       // login api call here
-      const response = fetch(`${TV_SHOW_TRACKER_API_BASE_URL}/Login`, {
-        method: 'POST',
-        body: JSON.stringify({ emailAddress, password }),
-      });
+      setIsLoading(true);
+      const response: any = await fetcher(
+        `${TV_SHOW_TRACKER_API_BASE_URL}/Login`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ emailAddress, password }),
+        },
+      );
 
-      const responseData = await (await response).json();
-      await AsyncStorage.setItem(JWT_TOKEN_KEY, responseData.token);
+      await AsyncStorage.setItem(JWT_TOKEN_KEY, response.token);
       setIsLoggedIn(true);
     } catch (error) {
       console.log(error);
     }
-
-    // setUserDetails({ token, username });
+    setIsLoading(false);
   };
 
-  return (
+  return isLoading ? (
+    <View style={styles.container}>
+      <ActivityIndicator />
+    </View>
+  ) : (
     <View style={styles.container}>
       <Image style={styles.image} source={require('./assets/logo.png')} />
-      <StatusBar style="auto" />
       <View style={styles.inputView}>
         <TextInput
           style={styles.TextInput}
           placeholder="Email Address"
+          textAlign={'center'}
           placeholderTextColor="#003f5c"
           onChangeText={email => setEmailAddress(email)}
+          autoCapitalize={'none'}
         />
       </View>
       <View style={styles.inputView}>
         <TextInput
           style={styles.TextInput}
           placeholder="Password"
+          textAlign={'center'}
           placeholderTextColor="#003f5c"
-          secureTextEntry={true}
+          secureTextEntry
           onChangeText={password => setPassword(password)}
         />
       </View>
@@ -115,51 +127,84 @@ const SignUpScreen = () => {
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
   const [repeatedPassword, setRepeatedPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [accountCreated, setaccountCreated] = useState(false);
 
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
   const handleSignUp = async () => {
-    // login api call here
-    const response = fetch(`${TV_SHOW_TRACKER_API_BASE_URL}/CreateAccount`, {
-      method: 'POST',
-      body: JSON.stringify({ emailAddress, password }),
-    });
+    try {
+      if (password !== repeatedPassword) {
+        return console.log('passwords not equal');
+      }
+      setIsLoading(true);
+      await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/CreateAccount`, {
+        method: 'POST',
+        body: JSON.stringify({ emailAddress, password }),
+      });
 
-    console.log(await (await response).json());
-    const token = await (await response).json();
+      setaccountCreated(true);
+    } catch (error) {
+      console.log('asd');
+      Toast.show({
+        type: 'error',
+        text1: 'Failed',
+        text2: 'Account creation failed',
+      });
 
-    // await Keychain.setGenericPassword(username, token);
-    // setIsLoggedIn(true);
-    // setUserDetails({ token, username });
+      console.log(error);
+    }
+    setIsLoading(false);
   };
-  return (
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  return accountCreated ? (
+    <View style={styles.container}>
+      <Text style={{ color: colors.text }}>Success!</Text>
+      <Text style={{ color: colors.text }}>
+        Your account has been created, please verify your email address by
+        clicking the link in the email in your inbox
+      </Text>
+    </View>
+  ) : (
     <View style={styles.container}>
       <Image style={styles.image} source={require('./assets/logo.png')} />
       <StatusBar style="auto" />
       <View style={styles.inputView}>
         <TextInput
           style={styles.TextInput}
+          textAlign="center"
           placeholder="Email address"
           placeholderTextColor="#003f5c"
           onChangeText={email => setEmailAddress(email)}
+          autoCapitalize="none"
         />
       </View>
       <View style={styles.inputView}>
         <TextInput
           style={styles.TextInput}
+          textAlign="center"
           placeholder="Password"
           placeholderTextColor="#003f5c"
-          secureTextEntry={true}
+          secureTextEntry
           onChangeText={input => setPassword(input)}
         />
       </View>
       <View style={styles.inputView}>
         <TextInput
           style={styles.TextInput}
+          textAlign="center"
           placeholder="Repeat password"
           placeholderTextColor="#003f5c"
-          secureTextEntry={true}
+          secureTextEntry
           onChangeText={input => setRepeatedPassword(input)}
         />
       </View>
@@ -170,8 +215,23 @@ const SignUpScreen = () => {
   );
 };
 
-const ListViewItem = ({ tvShow }) => {
+const ListViewItem = ({
+  tvShow,
+  isWatchlistItem,
+  handleButtonClick,
+  shouldShowButton,
+}) => {
+  const [isLoading, setIsLoading] = useState(false);
   const { colors } = useTheme();
+  const iconName = isWatchlistItem ? 'ios-remove' : 'ios-add';
+  const title = isWatchlistItem ? 'remove' : 'add';
+  const buttonColor = isWatchlistItem ? 'red' : 'blue';
+
+  const onButtonPress = async tvShow => {
+    setIsLoading(true);
+    await handleButtonClick(tvShow);
+    setIsLoading(false);
+  };
 
   return (
     <View
@@ -197,6 +257,21 @@ const ListViewItem = ({ tvShow }) => {
       />
       <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
         <Text style={{ color: colors.text }}>{tvShow.name}</Text>
+        {shouldShowButton && (
+          <ThemedButton
+            title={title}
+            color={buttonColor}
+            onPress={() => onButtonPress(tvShow)}
+            icon={
+              isLoading ? (
+                <ActivityIndicator />
+              ) : (
+                <Ionicons name={iconName} size={15} color={colors.text} />
+              )
+            }
+            iconRight
+          />
+        )}
       </View>
     </View>
   );
@@ -205,20 +280,7 @@ const ListViewItem = ({ tvShow }) => {
 function HomeScreen({ darkMode }) {
   const { colors } = useTheme();
   const [searchString, setsearchString] = useState('');
-
-  const getPopularTVShows = async (title: string = ''): Promise<any[]> => {
-    // If title is empty, all popular shows will be fetched
-    try {
-      const response = fetch(`${TV_SHOW_TRACKER_API_BASE_URL}/SearchTVShows`, {
-        method: 'POST',
-        body: JSON.stringify({ searchString: title }),
-      });
-      const tvShows = await (await response).json();
-      return tvShows;
-    } catch (error) {
-      throw error;
-    }
-  };
+  const [isLoading, setisLoading] = useState(false);
 
   const queryPopularTVShows = useQuery(
     ['popular', searchString],
@@ -231,6 +293,35 @@ function HomeScreen({ darkMode }) {
       },
     },
   );
+  const queryTrackedTVShows = useQuery(
+    ['tracked', ''],
+    () => getTrackedTVShows(''),
+    { staleTime: 60000 },
+  );
+
+  const addShow = async tvShow => {
+    try {
+      setisLoading(true);
+      const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
+      const response: any = await fetcher(
+        `${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            token,
+            updateObject: {
+              trackedTVShows: [...queryTrackedTVShows.data, tvShow],
+            },
+          }),
+        },
+      );
+
+      queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
+    } catch (error) {
+      console.log(error);
+    }
+    setisLoading(false);
+  };
 
   return (
     <View>
@@ -245,7 +336,14 @@ function HomeScreen({ darkMode }) {
       />
       <FlatList
         data={queryPopularTVShows.data}
-        renderItem={item => <ListViewItem tvShow={item.item} />}
+        renderItem={item => (
+          <ListViewItem
+            tvShow={item.item}
+            isWatchlistItem={false}
+            shouldShowButton={true}
+            handleButtonClick={addShow}
+          />
+        )}
       />
     </View>
   );
@@ -254,23 +352,7 @@ function HomeScreen({ darkMode }) {
 function WatchlistScreen({ darkMode }) {
   const { colors } = useTheme();
   const [searchString, setsearchString] = useState('');
-
-  const getTrackedTVShows = async (searchString: string): Promise<any> => {
-    try {
-      const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
-      const response = fetch(
-        `${TV_SHOW_TRACKER_API_BASE_URL}/GetTrackedTVShows`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ token, searchString }),
-        },
-      );
-      const tvShows = await (await response).json();
-      return tvShows;
-    } catch (error) {
-      throw error;
-    }
-  };
+  const [isLoading, setIsLoading] = useState(false);
 
   const queryTrackedTVShows = useQuery(
     ['tracked', searchString],
@@ -282,6 +364,32 @@ function WatchlistScreen({ darkMode }) {
       },
     },
   );
+
+  const removeShow = async tvShow => {
+    try {
+      setIsLoading(true);
+      const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
+      const newTvShows = queryTrackedTVShows.data.filter(
+        trackedTVShow => trackedTVShow.id !== tvShow.id,
+      );
+      const response: any = await fetcher(
+        `${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            token,
+            updateObject: {
+              trackedTVShows: newTvShows,
+            },
+          }),
+        },
+      );
+      queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
+    } catch (error) {
+      console.log(error);
+    }
+    setIsLoading(false);
+  };
 
   return (
     <View>
@@ -296,7 +404,14 @@ function WatchlistScreen({ darkMode }) {
       />
       <FlatList
         data={queryTrackedTVShows.data}
-        renderItem={item => <ListViewItem tvShow={item.item} />}
+        renderItem={item => (
+          <ListViewItem
+            tvShow={item.item}
+            isWatchlistItem={true}
+            shouldShowButton={true}
+            handleButtonClick={removeShow}
+          />
+        )}
       />
     </View>
   );
@@ -415,7 +530,7 @@ const App = () => {
   }, []);
 
   return (
-    <NavigationContainer theme={darkMode ? darkTheme : lightTheme}>
+    <NavigationContainer theme={currentTheme}>
       <QueryClientProvider client={queryClient}>
         <Tab.Navigator
           screenOptions={({ route }) => ({
@@ -485,6 +600,7 @@ const App = () => {
             </>
           )}
         </Tab.Navigator>
+        <Toast />
       </QueryClientProvider>
     </NavigationContainer>
   );
@@ -494,7 +610,7 @@ const makeStyles = (colors: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#fff',
+      backgroundColor: colors.background,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -503,7 +619,6 @@ const makeStyles = (colors: any) =>
     },
     inputView: {
       backgroundColor: '#FFC0CB',
-      borderRadius: 30,
       width: '70%',
       height: 45,
       marginBottom: 20,
@@ -513,15 +628,14 @@ const makeStyles = (colors: any) =>
       height: 50,
       flex: 1,
       padding: 10,
-      marginLeft: 20,
     },
     forgot_button: {
       height: 30,
       marginBottom: 30,
+      color: colors.text,
     },
     loginBtn: {
       width: '80%',
-      borderRadius: 25,
       height: 50,
       alignItems: 'center',
       justifyContent: 'center',
