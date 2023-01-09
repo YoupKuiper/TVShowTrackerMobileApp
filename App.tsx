@@ -81,6 +81,11 @@ const LoginScreen = ({ setIsLoggedIn }) => {
       await AsyncStorage.setItem(JWT_TOKEN_KEY, response.token);
       setIsLoggedIn(true);
     } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: 'Please check your credentials and retry',
+      });
       console.log(error);
     }
     setIsLoading(false);
@@ -146,7 +151,6 @@ const SignUpScreen = () => {
 
       setaccountCreated(true);
     } catch (error) {
-      console.log('asd');
       Toast.show({
         type: 'error',
         text1: 'Failed',
@@ -280,17 +284,12 @@ const ListViewItem = ({
 function HomeScreen({ darkMode }) {
   const { colors } = useTheme();
   const [searchString, setsearchString] = useState('');
-  const [isLoading, setisLoading] = useState(false);
 
   const queryPopularTVShows = useQuery(
     ['popular', searchString],
     () => getPopularTVShows(searchString),
     {
-      // enabled: !isTrackedList,
       staleTime: 60000,
-      onError: error => {
-        console.log('error happened');
-      },
     },
   );
   const queryTrackedTVShows = useQuery(
@@ -301,7 +300,6 @@ function HomeScreen({ darkMode }) {
 
   const addShow = async tvShow => {
     try {
-      setisLoading(true);
       const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
       const response: any = await fetcher(
         `${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`,
@@ -318,9 +316,12 @@ function HomeScreen({ darkMode }) {
 
       queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
     } catch (error) {
-      console.log(error);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed',
+        text2: 'Failed to add show to watchlist',
+      });
     }
-    setisLoading(false);
   };
 
   return (
@@ -334,17 +335,22 @@ function HomeScreen({ darkMode }) {
         onChangeText={setsearchString}
         value={searchString}
       />
-      <FlatList
-        data={queryPopularTVShows.data}
-        renderItem={item => (
-          <ListViewItem
-            tvShow={item.item}
-            isWatchlistItem={false}
-            shouldShowButton={true}
-            handleButtonClick={addShow}
-          />
-        )}
-      />
+
+      {queryPopularTVShows.isLoading ? (
+        <ActivityIndicator />
+      ) : (
+        <FlatList
+          data={queryPopularTVShows.data}
+          renderItem={item => (
+            <ListViewItem
+              tvShow={item.item}
+              isWatchlistItem={false}
+              shouldShowButton={true}
+              handleButtonClick={addShow}
+            />
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -386,7 +392,11 @@ function WatchlistScreen({ darkMode }) {
       );
       queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
     } catch (error) {
-      console.log(error);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed',
+        text2: 'Failed to remove show from watchlist',
+      });
     }
     setIsLoading(false);
   };
@@ -402,17 +412,21 @@ function WatchlistScreen({ darkMode }) {
         onChangeText={setsearchString}
         value={searchString}
       />
-      <FlatList
-        data={queryTrackedTVShows.data}
-        renderItem={item => (
-          <ListViewItem
-            tvShow={item.item}
-            isWatchlistItem={true}
-            shouldShowButton={true}
-            handleButtonClick={removeShow}
-          />
-        )}
-      />
+      {queryTrackedTVShows.isLoading ? (
+        <ActivityIndicator />
+      ) : (
+        <FlatList
+          data={queryTrackedTVShows.data}
+          renderItem={item => (
+            <ListViewItem
+              tvShow={item.item}
+              isWatchlistItem={true}
+              shouldShowButton={true}
+              handleButtonClick={removeShow}
+            />
+          )}
+        />
+      )}
     </View>
   );
 }

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TV_SHOW_TRACKER_API_BASE_URL } from '@env';
 import { JWT_TOKEN_KEY } from './constants';
+import { Toast } from 'react-native-toast-message/lib/src/Toast';
 
 export const fetcher = async <T>(input: RequestInfo, init?: RequestInit) => {
   const response = await fetch(input, init);
@@ -22,6 +23,11 @@ export const getTrackedTVShows = async (searchString: string): Promise<any> => {
     );
     return tvShows;
   } catch (error) {
+    Toast.show({
+      type: 'error',
+      text1: 'Failed',
+      text2: 'Failed to fetch watchlist',
+    });
     throw error;
   }
 };
@@ -38,6 +44,11 @@ export const getPopularTVShows = async (title: string = ''): Promise<any> => {
     );
     return tvShows;
   } catch (error) {
+    Toast.show({
+      type: 'error',
+      text1: 'Failed',
+      text2: 'Failed to fetch popular tv shows',
+    });
     throw error;
   }
 };
