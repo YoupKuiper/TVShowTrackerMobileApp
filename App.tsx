@@ -28,13 +28,11 @@ import SplashScreen from 'react-native-splash-screen';
 import Toast from 'react-native-toast-message';
 
 import {
-  CURRENT_PAGE_KEY,
   DARK_MODE_KEY,
   DEFAULT_USER,
   IMAGES_BASE_URL,
   IMAGE_DEFAULT_SIZE,
   JWT_TOKEN_KEY,
-  PAGE_NAME_SEARCH,
   USER_KEY,
 } from './constants';
 import { useStickyState } from './hooks/sticky-state-hook';
@@ -277,62 +275,6 @@ class ListViewItem extends PureComponent<any> {
     );
   }
 }
-// const ListViewItem = ({ tvShow, isWatchlistItem, handleButtonClick, shouldShowButton }) => {
-//   const [isLoading, setIsLoading] = useState(false);
-//   const { colors } = useTheme();
-//   const iconName = isWatchlistItem ? 'ios-remove' : 'ios-add';
-//   const title = isWatchlistItem ? 'remove' : 'add';
-//   const buttonColor = isWatchlistItem ? 'red' : 'blue';
-
-//   const onButtonPress = async tvShow => {
-//     setIsLoading(true);
-//     await handleButtonClick(tvShow);
-//     setIsLoading(false);
-//   };
-
-//   return (
-//     <View
-//       style={{
-//         height: 181,
-//         width: '100%',
-//         flexDirection: 'row',
-//         flexWrap: 'wrap',
-//         marginBottom: 2,
-//         borderColor: colors.border,
-//         borderBottomWidth: 1,
-//       }}>
-//       <Image
-//         style={{
-//           height: 180,
-//           width: 120,
-//         }}
-//         source={{
-//           uri:
-//             IMAGES_BASE_URL + IMAGE_DEFAULT_SIZE + tvShow.poster_path ||
-//             'https://via.placeholder.com/400',
-//         }}
-//       />
-//       <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
-//         <Text style={{ color: colors.text }}>{tvShow.name}</Text>
-//         {shouldShowButton ? (
-//           <ThemedButton
-//             title={title}
-//             color={buttonColor}
-//             onPress={() => onButtonPress(tvShow)}
-//             icon={
-//               isLoading ? (
-//                 <ActivityIndicator />
-//               ) : (
-//                 <Ionicons name={iconName} size={15} color={colors.text} />
-//               )
-//             }
-//             iconRight
-//           />
-//         ) : null}
-//       </View>
-//     </View>
-//   );
-// };
 
 function HomeScreen({ darkMode, refresh, setRefresh }) {
   const { colors } = useTheme();
@@ -382,7 +324,7 @@ function HomeScreen({ darkMode, refresh, setRefresh }) {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.flatlistView}>
       <StatusBar
         barStyle={darkMode ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
@@ -461,7 +403,7 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.flatlistView}>
       <StatusBar
         barStyle={darkMode ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
@@ -506,23 +448,42 @@ function SettingsScreen({ darkMode, toggleDarkMode, setIsLoggedIn }) {
   };
 
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}>
-      <Text style={{ color: colors.text }}>Dark mode</Text>
-      <Switch
-        trackColor={{ false: '#767577', true: '#81b0ff' }}
-        thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
-        ios_backgroundColor="#3e3e3e"
-        onValueChange={toggleDarkMode}
-        value={darkMode}
-      />
-      <TouchableOpacity style={styles.loginBtn} onPress={handleLogout}>
-        <Text style={styles.loginText}>LOGOUT</Text>
-      </TouchableOpacity>
+    <View style={styles.flatlistView}>
+      <View style={styles.settingsItem}>
+        <Text style={styles.settingsText}>Dark mode</Text>
+        <Switch
+          trackColor={{ false: '#767577', true: '#81b0ff' }}
+          thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
+          ios_backgroundColor="#3e3e3e"
+          onValueChange={toggleDarkMode}
+          value={darkMode}
+        />
+      </View>
+      <View style={styles.settingsItem}>
+        <Text style={styles.settingsText}>Email Notifications</Text>
+        <Switch
+          trackColor={{ false: '#767577', true: '#81b0ff' }}
+          thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
+          ios_backgroundColor="#3e3e3e"
+          onValueChange={toggleDarkMode}
+          value={darkMode}
+        />
+      </View>
+      <View style={styles.settingsItem}>
+        <Text style={styles.settingsText}>Push Notifications</Text>
+        <Switch
+          trackColor={{ false: '#767577', true: '#81b0ff' }}
+          thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
+          ios_backgroundColor="#3e3e3e"
+          onValueChange={toggleDarkMode}
+          value={darkMode}
+        />
+      </View>
+      <View style={styles.container}>
+        <TouchableOpacity style={styles.loginBtn} onPress={handleLogout}>
+          <Text style={styles.loginText}>LOGOUT</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -712,7 +673,7 @@ const makeStyles = (colors: any) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    // flatlist: { paddingBottom: 20 },
+    flatlistView: { flex: 1 },
     image: {
       marginBottom: 40,
     },
@@ -739,8 +700,16 @@ const makeStyles = (colors: any) =>
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: 40,
-      backgroundColor: '#FF1493',
+      backgroundColor: colors.border,
     },
+    settingsText: {
+      color: colors.text,
+      height: 50,
+      textAlignVertical: 'center',
+      paddingLeft: 10,
+      flex: 4,
+    },
+    settingsItem: { flexDirection: 'row', borderBottomColor: colors.border, borderBottomWidth: 1 },
   });
 
 export default App;
