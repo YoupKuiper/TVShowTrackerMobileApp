@@ -9,27 +9,24 @@
  */
 
 import { TV_SHOW_TRACKER_API_BASE_URL } from '@env';
+import messaging from '@react-native-firebase/messaging';
 import { NavigationContainer, useTheme } from '@react-navigation/native';
-import SplashScreen from 'react-native-splash-screen';
-import Toast from 'react-native-toast-message';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Button,
   Image,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Switch,
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from 'react-native';
+import SplashScreen from 'react-native-splash-screen';
+import Toast from 'react-native-toast-message';
 
-import { Colors, Header, LearnMoreLinks } from 'react-native/Libraries/NewAppScreen';
 import {
   CURRENT_PAGE_KEY,
   DARK_MODE_KEY,
@@ -44,10 +41,9 @@ import { useStickyState } from './hooks/sticky-state-hook';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Button as ThemedButton, SearchBar } from '@rneui/themed';
 import { FlatList } from 'react-native-gesture-handler';
-import * as Keychain from 'react-native-keychain';
-import { Icon, SearchBar, Button as ThemedButton } from '@rneui/themed';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { fetcher, getPopularTVShows, getTrackedTVShows } from './api';
 
 const LoginScreen = ({ setIsLoggedIn }) => {
@@ -259,6 +255,8 @@ class ListViewItem extends PureComponent<any> {
         />
         <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
           <Text style={{ color: this.props.colors.text }}>{this.props.tvShow.name}</Text>
+        </View>
+        <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
           {this.props.shouldShowButton ? (
             <ThemedButton
               title={title}
@@ -339,6 +337,7 @@ class ListViewItem extends PureComponent<any> {
 function HomeScreen({ darkMode, refresh, setRefresh }) {
   const { colors } = useTheme();
   const [searchString, setsearchString] = useState('');
+  const styles = makeStyles(colors);
 
   const queryPopularTVShows = useQuery(
     ['popular', searchString],
@@ -383,12 +382,19 @@ function HomeScreen({ darkMode, refresh, setRefresh }) {
   };
 
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <StatusBar
         barStyle={darkMode ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
-      <SearchBar placeholder="Search..." onChangeText={setsearchString} value={searchString} />
+      <SearchBar
+        placeholder="Search..."
+        onChangeText={setsearchString}
+        value={searchString}
+        containerStyle={{ backgroundColor: colors.background }}
+        inputStyle={{ backgroundColor: colors.background }}
+        inputContainerStyle={{ backgroundColor: colors.background }}
+      />
 
       {queryPopularTVShows.isLoading ? (
         <ActivityIndicator />
@@ -397,6 +403,7 @@ function HomeScreen({ darkMode, refresh, setRefresh }) {
           data={queryPopularTVShows.data}
           keyExtractor={item => item.id}
           extraData={refresh}
+          // contentContainerStyle={styles.flatlist}
           renderItem={item => {
             return (
               <ListViewItem
@@ -417,6 +424,7 @@ function HomeScreen({ darkMode, refresh, setRefresh }) {
 function WatchlistScreen({ darkMode, refresh, setRefresh }) {
   const { colors } = useTheme();
   const [searchString, setsearchString] = useState('');
+  const styles = makeStyles(colors);
 
   const queryTrackedTVShows = useQuery(
     ['tracked', searchString],
@@ -453,12 +461,19 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
   };
 
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <StatusBar
         barStyle={darkMode ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
       />
-      <SearchBar placeholder="Search..." onChangeText={setsearchString} value={searchString} />
+      <SearchBar
+        placeholder="Search..."
+        onChangeText={setsearchString}
+        value={searchString}
+        containerStyle={{ backgroundColor: colors.background }}
+        inputStyle={{ backgroundColor: colors.background }}
+        inputContainerStyle={{ backgroundColor: colors.background }}
+      />
       {queryTrackedTVShows.isLoading ? (
         <ActivityIndicator />
       ) : (
@@ -526,14 +541,6 @@ const queryClient = new QueryClient();
 const App = () => {
   const [darkMode, setDarkMode] = useStickyState(getDarkModeStateFromLocalStorage, DARK_MODE_KEY);
   const [loggedInUser, setLoggedInUser] = useStickyState(DEFAULT_USER, USER_KEY);
-  const [currentPage, setCurrentPage] = useStickyState(PAGE_NAME_SEARCH, CURRENT_PAGE_KEY);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
-  // const [tvShowDetailsToShow, setTVShowDetailsToShow] =
-  //   useState<TVShow>(DEFAULT_TV_SHOW);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchPopular, setSearchPopular] = useState('');
-  const [searchTracked, setSearchTracked] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [refresh, setRefresh] = useState(false);
 
@@ -582,6 +589,48 @@ const App = () => {
     getLoggedInState()
       // make sure to catch any error
       .catch(console.error);
+
+    messaging().onMessage(remoteMessage => {
+      console.log('showed toast with notification');
+      Toast.show({
+        type: 'info',
+        text1: 'Notification caused app to open from background state:',
+        text2: remoteMessage?.notification?.toString() || 'no text in notification',
+      });
+    });
+
+    messaging().onNotificationOpenedApp(remoteMessage => {
+      console.log('opened app after clicking notification');
+      Toast.show({
+        type: 'info',
+        text1: 'Clicked notificaion to open the app',
+        text2: remoteMessage?.notification?.toString() || 'no text in notification',
+      });
+      // navigation.navigate(remoteMessage.data.type);
+    });
+
+    // Check whether an initial notification is available
+    messaging()
+      .getInitialNotification()
+      .then(remoteMessage => {
+        if (remoteMessage) {
+          console.log('there was an initial notification');
+          Toast.show({
+            type: 'info',
+            text1: 'Notification caused app to open from quit state:',
+            text2: remoteMessage?.notification?.toString() || 'no text in notification',
+          });
+          // setInitialRoute(remoteMessage.data.type); // e.g. "Settings"
+        }
+        // setLoading(false);
+      });
+
+    messaging()
+      .registerDeviceForRemoteMessages()
+      .then(async () => {
+        const token = await messaging().getToken();
+        console.log(`TOKEN: ${token}`);
+      });
   }, []);
 
   return (
@@ -663,6 +712,7 @@ const makeStyles = (colors: any) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
+    // flatlist: { paddingBottom: 20 },
     image: {
       marginBottom: 40,
     },
