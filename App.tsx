@@ -62,6 +62,7 @@ const LoginScreen = ({ setIsLoggedIn }) => {
       });
 
       await AsyncStorage.setItem(JWT_TOKEN_KEY, response.token);
+      console.log(JSON.stringify(response));
       setIsLoggedIn(true);
     } catch (error) {
       Toast.show({
@@ -504,13 +505,15 @@ const App = () => {
   const [loggedInUser, setLoggedInUser] = useStickyState(DEFAULT_USER, USER_KEY);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [refresh, setRefresh] = useState(false);
+  const isLoggedInFixed = loggedInUser !== DEFAULT_USER;
 
   const toggleDarkMode = () => setDarkMode(previousState => !previousState);
 
   const darkTheme = {
     dark: true,
     colors: {
-      primary: 'rgb(31, 41, 55)',
+      primary: 'rgb(67, 56, 202)',
+      secondary: '',
       background: 'rgb(31, 41, 55)',
       card: 'rgb(255, 255, 255)',
       text: 'rgb(255, 255, 255)',
@@ -522,7 +525,8 @@ const App = () => {
   const lightTheme = {
     dark: false,
     colors: {
-      primary: 'rgb(31, 41, 55)',
+      primary: 'rgb(67, 56, 202)',
+      secondary: 'rgb(67 56 202)',
       background: 'rgb(255, 255, 255)',
       card: 'rgb(255, 255, 255)',
       text: 'rgb(0, 0, 0)',
@@ -541,7 +545,7 @@ const App = () => {
           setIsLoggedIn(true);
         }
       } catch (error) {
-        console.log(error);
+        console.log(error.message);
       }
       SplashScreen.hide();
     };
@@ -688,6 +692,7 @@ const makeStyles = (colors: any) =>
       height: 50,
       flex: 1,
       padding: 10,
+      color: '#003f5c',
     },
     forgot_button: {
       height: 30,
@@ -700,7 +705,7 @@ const makeStyles = (colors: any) =>
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: 40,
-      backgroundColor: colors.border,
+      backgroundColor: colors.primary,
     },
     settingsText: {
       color: colors.text,
