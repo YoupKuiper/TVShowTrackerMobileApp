@@ -1,19 +1,25 @@
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const useStickyState = async (defaultValue: unknown, key: string) => {
+export const useAsyncStorage = (key: any, defaultValue: any) => {
   const [value, setValue] = useState(async () => {
     const stickyValue = await AsyncStorage.getItem(key);
-    return stickyValue !== null ? JSON.parse(stickyValue) : defaultValue;
+    if (!stickyValue) {
+      return defaultValue;
+    }
+    try {
+      return JSON.parse(stickyValue);
+    } catch (error) {
+      if (stickyValue) {
+        return stickyValue;
+      }
+    }
   });
 
-  const setAsyncStorageItem = async (keyToSet: any, valueToSet: any) => {
-    await AsyncStorage.setItem(keyToSet, valueToSet);
-  };
   useEffect(() => {
-    setAsyncStorageItem(key, JSON.stringify(value)).catch(() => {
-      console.log('Failed to set async storage item');
-    });
+    (async () => {
+      await AsyncStorage.setItem(key, JSON.stringify(value));
+    })();
   }, [key, value]);
   return [value, setValue];
 };

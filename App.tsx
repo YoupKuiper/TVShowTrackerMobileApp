@@ -35,17 +35,28 @@ import {
   JWT_TOKEN_KEY,
   USER_KEY,
 } from './constants';
-import { useStickyState } from './hooks/sticky-state-hook';
+import { useAsyncStorage } from './hooks/sticky-state-hook';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Button as ThemedButton, SearchBar } from '@rneui/themed';
 import { FlatList } from 'react-native-gesture-handler';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { fetcher, getPopularTVShows, getTrackedTVShows } from './api';
+import {
+  fetcher,
+  getPopularTVShows,
+  getTrackedTVShows,
+  getUserForToken,
+  updateMobileNotificationsToken,
+  updateWantsEmailNotifications,
+} from './api';
 
-const LoginScreen = ({ setIsLoggedIn }) => {
-  const [emailAddress, setEmailAddress] = useState('');
+const LoginScreen = ({
+  emailAddress,
+  setEmailAddress,
+  setWantsEmailNotifications,
+  setWantsMobileNotifications,
+}) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -62,8 +73,9 @@ const LoginScreen = ({ setIsLoggedIn }) => {
       });
 
       await AsyncStorage.setItem(JWT_TOKEN_KEY, response.token);
-      console.log(JSON.stringify(response));
-      setIsLoggedIn(true);
+      setEmailAddress(response.emailAddress);
+      setWantsEmailNotifications(response.wantsEmailNotifications);
+      setWantsMobileNotifications(response.wantsMobileNotifications);
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -439,13 +451,21 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
   );
 }
 
-function SettingsScreen({ darkMode, toggleDarkMode, setIsLoggedIn }) {
+function SettingsScreen({
+  darkMode,
+  toggleDarkMode,
+  wantsEmailNotifications,
+  setWantsEmailNotifications,
+  wantsMobileNotifications,
+  setWantsMobileNotifications,
+  setIsloggedIn,
+}) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem(JWT_TOKEN_KEY);
-    setIsLoggedIn(false);
+    await AsyncStorage.setItem(JWT_TOKEN_KEY, '');
+    setIsloggedIn(false);
   };
 
   return (
@@ -464,20 +484,20 @@ function SettingsScreen({ darkMode, toggleDarkMode, setIsLoggedIn }) {
         <Text style={styles.settingsText}>Email Notifications</Text>
         <Switch
           trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
+          thumbColor={wantsEmailNotifications ? '#f5dd4b' : '#f4f3f4'}
           ios_backgroundColor="#3e3e3e"
-          onValueChange={toggleDarkMode}
-          value={darkMode}
+          onValueChange={() => setWantsEmailNotifications(prevState => !prevState)}
+          value={wantsEmailNotifications}
         />
       </View>
       <View style={styles.settingsItem}>
         <Text style={styles.settingsText}>Push Notifications</Text>
         <Switch
           trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
+          thumbColor={wantsMobileNotifications ? '#f5dd4b' : '#f4f3f4'}
           ios_backgroundColor="#3e3e3e"
-          onValueChange={toggleDarkMode}
-          value={darkMode}
+          onValueChange={() => setWantsMobileNotifications(prevState => !prevState)}
+          value={wantsMobileNotifications}
         />
       </View>
       <View style={styles.container}>
@@ -501,11 +521,12 @@ const getDarkModeStateFromLocalStorage = async () => {
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [darkMode, setDarkMode] = useStickyState(getDarkModeStateFromLocalStorage, DARK_MODE_KEY);
-  const [loggedInUser, setLoggedInUser] = useStickyState(DEFAULT_USER, USER_KEY);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [darkMode, setDarkMode] = useAsyncStorage(DARK_MODE_KEY, getDarkModeStateFromLocalStorage);
+  const [emailAddress, setEmailAddress] = useState('');
+  const [wantsEmailNotifications, setWantsEmailNotifications] = useState(false);
+  const [wantsMobileNotifications, setWantsMobileNotifications] = useState(false);
   const [refresh, setRefresh] = useState(false);
-  const isLoggedInFixed = loggedInUser !== DEFAULT_USER;
+  const [isLoggedIn, setisLoggedIn] = useState(false);
 
   const toggleDarkMode = () => setDarkMode(previousState => !previousState);
 
@@ -537,23 +558,29 @@ const App = () => {
 
   const currentTheme = darkMode ? darkTheme : lightTheme;
 
-  useEffect(() => {
-    const getLoggedInState = async () => {
-      try {
-        const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
-        if (token) {
-          setIsLoggedIn(true);
-        }
-      } catch (error) {
-        console.log(error.message);
-      }
-      SplashScreen.hide();
-    };
+  const updateEmailNotifications = async (newWantsEmailNotifications: boolean) => {
+    await updateWantsEmailNotifications(newWantsEmailNotifications);
+    setWantsEmailNotifications(newWantsEmailNotifications);
+  };
 
-    // call the function
-    getLoggedInState()
-      // make sure to catch any error
-      .catch(console.error);
+  const updateMobileNotifications = async (newWantsMobileNotifications: boolean) => {
+    await updateWantsEmailNotifications(newWantsMobileNotifications);
+    setWantsMobileNotifications(newWantsMobileNotifications);
+  };
+
+  useEffect(() => {
+    (async () => {
+      const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
+      if (token) {
+        setisLoggedIn(true);
+        const response: any = await getUserForToken(token);
+        setEmailAddress(response.emailAddress);
+        setWantsEmailNotifications(response.wantsEmailNotifications);
+        setWantsMobileNotifications(response.wantsMobileNotifications);
+
+        SplashScreen.hide();
+      }
+    })();
 
     messaging().onMessage(remoteMessage => {
       console.log('showed toast with notification');
@@ -594,6 +621,7 @@ const App = () => {
       .registerDeviceForRemoteMessages()
       .then(async () => {
         const token = await messaging().getToken();
+        await updateMobileNotificationsToken(token);
         console.log(`TOKEN: ${token}`);
       });
   }, []);
@@ -648,7 +676,11 @@ const App = () => {
                   <SettingsScreen
                     darkMode={darkMode}
                     toggleDarkMode={toggleDarkMode}
-                    setIsLoggedIn={setIsLoggedIn}
+                    wantsEmailNotifications={wantsEmailNotifications}
+                    setWantsEmailNotifications={updateEmailNotifications}
+                    wantsMobileNotifications={wantsMobileNotifications}
+                    setWantsMobileNotifications={updateMobileNotifications}
+                    setIsloggedIn={setisLoggedIn}
                   />
                 )}
               />
@@ -657,7 +689,14 @@ const App = () => {
             <>
               <Tab.Screen
                 name="Login"
-                children={() => <LoginScreen setIsLoggedIn={setIsLoggedIn} />}
+                children={() => (
+                  <LoginScreen
+                    emailAddress={emailAddress}
+                    setEmailAddress={setEmailAddress}
+                    setWantsEmailNotifications={setWantsEmailNotifications}
+                    setWantsMobileNotifications={setWantsMobileNotifications}
+                  />
+                )}
               />
               <Tab.Screen name="Sign up" children={() => <SignUpScreen />} />
             </>

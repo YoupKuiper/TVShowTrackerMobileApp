@@ -12,6 +12,7 @@ export const PAGE_NAME_TRACKED_TV_SHOWS = 'Watchlist';
 export const DEFAULT_USER = {
   emailAddress: '',
   wantsEmailNotifications: false,
+  wantsMobileNotifications: false,
 };
 export const DEFAULT_TV_SHOW = {
   id: 9999999999,

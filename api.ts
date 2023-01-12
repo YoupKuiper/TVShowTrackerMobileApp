@@ -14,15 +14,14 @@ export const fetcher = async <T>(input: RequestInfo, init?: RequestInit) => {
 export const getTrackedTVShows = async (searchString: string): Promise<any> => {
   try {
     const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
-    const tvShows = await fetcher(
-      `${TV_SHOW_TRACKER_API_BASE_URL}/GetTrackedTVShows`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ token, searchString }),
-      },
-    );
+    console.log(token);
+    const tvShows = await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/GetTrackedTVShows`, {
+      method: 'POST',
+      body: JSON.stringify({ token, searchString }),
+    });
     return tvShows;
   } catch (error) {
+    console.error(error);
     Toast.show({
       type: 'error',
       text1: 'Failed',
@@ -35,13 +34,10 @@ export const getTrackedTVShows = async (searchString: string): Promise<any> => {
 export const getPopularTVShows = async (title: string = ''): Promise<any> => {
   // If title is empty, all popular shows will be fetched
   try {
-    const tvShows = await fetcher(
-      `${TV_SHOW_TRACKER_API_BASE_URL}/SearchTVShows`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ searchString: title }),
-      },
-    );
+    const tvShows = await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/SearchTVShows`, {
+      method: 'POST',
+      body: JSON.stringify({ searchString: title }),
+    });
     return tvShows;
   } catch (error) {
     Toast.show({
@@ -50,5 +46,59 @@ export const getPopularTVShows = async (title: string = ''): Promise<any> => {
       text2: 'Failed to fetch popular tv shows',
     });
     throw error;
+  }
+};
+
+export const getUserForToken = async (token: any) => {
+  try {
+    return await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/Login`, {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  } catch (error) {}
+};
+
+export const updateWantsEmailNotifications = async (newWantsEmailNotifications: type) => {
+  try {
+    return await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
+      method: 'POST',
+      body: JSON.stringify({ wantsEmailNotifications: newWantsEmailNotifications }),
+    });
+  } catch (error) {
+    Toast.show({
+      type: 'error',
+      text1: 'Failed',
+      text2: 'Failed to update email notification setting',
+    });
+  }
+};
+
+export const updateWantsMobileNotifications = async (newWantsMobileNotifications: type) => {
+  try {
+    return await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
+      method: 'POST',
+      body: JSON.stringify({ newWantsMobileNotifications: newWantsMobileNotifications }),
+    });
+  } catch (error) {
+    Toast.show({
+      type: 'error',
+      text1: 'Failed',
+      text2: 'Failed to update mobile notification setting',
+    });
+  }
+};
+
+export const updateMobileNotificationsToken = async (newMobileNotificationsToken: type) => {
+  try {
+    return await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
+      method: 'POST',
+      body: JSON.stringify({ mobileNotificationsToken: newMobileNotificationsToken }),
+    });
+  } catch (error) {
+    Toast.show({
+      type: 'error',
+      text1: 'Failed',
+      text2: 'Failed to set up mobile notifications',
+    });
   }
 };
