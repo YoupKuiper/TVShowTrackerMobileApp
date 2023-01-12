@@ -122,7 +122,7 @@ const LoginScreen = ({
         <Text style={styles.forgot_button}>Forgot Password?</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-        <Text style={styles.loginText}>LOGIN</Text>
+        <Text style={styles.buttonText}>LOGIN</Text>
       </TouchableOpacity>
     </View>
   );
@@ -220,7 +220,7 @@ const SignUpScreen = () => {
         />
       </View>
       <TouchableOpacity style={styles.loginBtn} onPress={handleSignUp}>
-        <Text style={styles.loginText}>SIGN UP</Text>
+        <Text style={styles.buttonText}>SIGN UP</Text>
       </TouchableOpacity>
     </View>
   );
@@ -237,7 +237,6 @@ class ListViewItem extends PureComponent<any> {
 
   render() {
     const iconName = this.props.isWatchlistItem ? 'ios-remove' : 'ios-add';
-    const title = this.props.isWatchlistItem ? 'remove' : 'add';
     const buttonColor = this.props.isWatchlistItem ? 'red' : 'blue';
     const onButtonPress = async tvShow => {
       this.setState({ isLoading: true });
@@ -266,25 +265,26 @@ class ListViewItem extends PureComponent<any> {
               'https://via.placeholder.com/400',
           }}
         />
-        <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
-          <Text style={{ color: this.props.colors.text }}>{this.props.tvShow.name}</Text>
-        </View>
-        <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
-          {this.props.shouldShowButton ? (
-            <ThemedButton
-              title={title}
-              color={buttonColor}
-              onPress={() => onButtonPress(this.props.tvShow)}
-              icon={
-                this.state.isLoading ? (
-                  <ActivityIndicator />
-                ) : (
-                  <Ionicons name={iconName} size={15} color={this.props.colors.text} />
-                )
-              }
-              iconRight
-            />
-          ) : null}
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          <View style={{ justifyContent: 'center', paddingLeft: 20, flex: 5 }}>
+            <Text style={{ color: this.props.colors.text }}>{this.props.tvShow.name}</Text>
+          </View>
+          <View style={{ justifyContent: 'center', paddingRight: 20, flex: 2 }}>
+            {this.props.shouldShowButton ? (
+              <ThemedButton
+                color={buttonColor}
+                onPress={() => onButtonPress(this.props.tvShow)}
+                icon={
+                  this.state.isLoading ? (
+                    <ActivityIndicator />
+                  ) : (
+                    <Ionicons name={iconName} size={15} color={this.props.colors.card} />
+                  )
+                }
+                iconRight
+              />
+            ) : null}
+          </View>
         </View>
       </View>
     );
@@ -348,9 +348,9 @@ function HomeScreen({ darkMode, refresh, setRefresh }) {
         placeholder="Search..."
         onChangeText={setsearchString}
         value={searchString}
-        containerStyle={{ backgroundColor: colors.background }}
-        inputStyle={{ backgroundColor: colors.background }}
-        inputContainerStyle={{ backgroundColor: colors.background }}
+        containerStyle={{ backgroundColor: colors.header }}
+        inputStyle={{ backgroundColor: colors.header }}
+        inputContainerStyle={{ backgroundColor: colors.header }}
       />
 
       {queryPopularTVShows.isLoading ? (
@@ -360,7 +360,7 @@ function HomeScreen({ darkMode, refresh, setRefresh }) {
           data={queryPopularTVShows.data}
           keyExtractor={item => item.id}
           extraData={refresh}
-          // contentContainerStyle={styles.flatlist}
+          keyboardShouldPersistTaps="handled"
           renderItem={item => {
             return (
               <ListViewItem
@@ -394,7 +394,9 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
   const removeShow = async tvShow => {
     try {
       const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
-      const newTvShows = queryTrackedTVShows.data.filter(
+      const cachedWatchlistShows: any = queryClient.getQueryData(['tracked', '']);
+
+      const newTvShows = cachedWatchlistShows.filter(
         trackedTVShow => trackedTVShow.id !== tvShow.id,
       );
       const response: any = await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
@@ -407,6 +409,10 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
         }),
       });
       queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
+      queryClient.setQueryData(
+        ['tracked', searchString],
+        response.trackedTVShows.filter(tvShow => tvShow.name.includes(searchString)),
+      );
       setRefresh(oldrefresh => !oldrefresh);
     } catch (error) {
       Toast.show({
@@ -427,9 +433,9 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
         placeholder="Search..."
         onChangeText={setsearchString}
         value={searchString}
-        containerStyle={{ backgroundColor: colors.background }}
-        inputStyle={{ backgroundColor: colors.background }}
-        inputContainerStyle={{ backgroundColor: colors.background }}
+        containerStyle={{ backgroundColor: colors.header }}
+        inputStyle={{ backgroundColor: colors.header }}
+        inputContainerStyle={{ backgroundColor: colors.header }}
       />
       {queryTrackedTVShows.isLoading ? (
         <ActivityIndicator />
@@ -438,6 +444,7 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
           data={queryTrackedTVShows.data}
           keyExtractor={item => item.id}
           extraData={refresh}
+          keyboardShouldPersistTaps="handled"
           renderItem={item => (
             <ListViewItem
               tvShow={item.item}
@@ -467,6 +474,14 @@ function SettingsScreen({
   const styles = makeStyles(colors);
 
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      //Toggle twice on boot so switch value is correct
+      toggleDarkMode();
+      toggleDarkMode();
+    })();
+  }, []);
 
   const handleLogout = async () => {
     await AsyncStorage.setItem(JWT_TOKEN_KEY, '');
@@ -528,14 +543,14 @@ function SettingsScreen({
             style={{ ...styles.loginBtn, marginTop: 20 }}
             onPress={handleSaveSettings}
             disabled={isLoading}>
-            <Text style={styles.loginText}>{isLoading ? <ActivityIndicator /> : <>SAVE</>}</Text>
+            <Text style={styles.buttonText}>{isLoading ? <ActivityIndicator /> : <>SAVE</>}</Text>
           </TouchableOpacity>
         </View>
       </View>
       <View style={{ flex: 3 }}>
         <View style={styles.container}>
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-            <Text style={styles.loginText}>LOGOUT</Text>
+            <Text style={styles.buttonText}>LOGOUT</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -570,10 +585,12 @@ const App = () => {
       primary: 'rgb(67, 56, 202)',
       secondary: 'rgb(238, 75, 43)',
       background: 'rgb(31, 41, 55)',
+      header: 'rgb(31, 41, 55)',
       card: 'rgb(255, 255, 255)',
       text: 'rgb(255, 255, 255)',
-      border: 'rgb(156, 163, 175)',
+      border: 'rgb(147,147,147)',
       notification: 'rgb(255, 69, 58)',
+      bottomNav: 'rgb(68, 166, 198)',
     },
   };
 
@@ -583,10 +600,12 @@ const App = () => {
       primary: 'rgb(67, 56, 202)',
       secondary: 'rgb(238, 75, 43)',
       background: 'rgb(255, 255, 255)',
+      header: 'rgb(31, 41, 55)',
       card: 'rgb(255, 255, 255)',
       text: 'rgb(0, 0, 0)',
-      border: 'rgb(156, 163, 175)',
+      border: 'rgb(147,147,147)',
       notification: 'rgb(255, 69, 58)',
+      bottomNav: 'rgb(68, 166, 198)',
     },
   };
 
@@ -610,7 +629,6 @@ const App = () => {
         setEmailAddress(response.emailAddress);
         setWantsEmailNotifications(response.wantsEmailNotifications);
         setWantsMobileNotifications(response.wantsMobileNotifications);
-
         SplashScreen.hide();
       }
     })();
@@ -666,10 +684,11 @@ const App = () => {
         <Tab.Navigator
           screenOptions={({ route }) => ({
             headerStyle: {
-              backgroundColor: currentTheme.colors.background,
+              backgroundColor: currentTheme.colors.header,
             },
+            headerTintColor: currentTheme.colors.card,
             tabBarStyle: {
-              backgroundColor: currentTheme.colors.background,
+              backgroundColor: currentTheme.colors.header,
             },
             tabBarIcon: ({ focused, size }) => {
               let iconName;
@@ -685,10 +704,16 @@ const App = () => {
               } else if (route.name === 'Sign up') {
                 iconName = focused ? 'ios-person-add' : 'ios-person-add-outline';
               }
-              return <Ionicons name={iconName} size={size} color={currentTheme.colors.text} />;
+              return (
+                <Ionicons
+                  name={iconName}
+                  size={size}
+                  color={focused ? currentTheme.colors.bottomNav : currentTheme.colors.card}
+                />
+              );
             },
-            tabBarActiveTintColor: 'tomato',
-            tabBarInactiveTintColor: currentTheme.colors.text,
+            tabBarActiveTintColor: currentTheme.colors.bottomNav,
+            tabBarInactiveTintColor: currentTheme.colors.card,
           })}>
           {isLoggedIn ? (
             <>
@@ -788,6 +813,9 @@ const makeStyles = (colors: any) =>
       justifyContent: 'center',
       marginTop: 40,
       backgroundColor: colors.secondary,
+    },
+    buttonText: {
+      color: '#fff',
     },
     settingsText: {
       color: colors.text,
