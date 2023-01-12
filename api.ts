@@ -58,11 +58,14 @@ export const getUserForToken = async (token: any) => {
   } catch (error) {}
 };
 
-export const updateWantsEmailNotifications = async (newWantsEmailNotifications: type) => {
+export const updateWantsEmailNotifications = async (
+  newWantsEmailNotifications: any,
+  token: any,
+) => {
   try {
     return await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
       method: 'POST',
-      body: JSON.stringify({ wantsEmailNotifications: newWantsEmailNotifications }),
+      body: JSON.stringify({ token, wantsEmailNotifications: newWantsEmailNotifications }),
     });
   } catch (error) {
     Toast.show({
@@ -73,11 +76,14 @@ export const updateWantsEmailNotifications = async (newWantsEmailNotifications: 
   }
 };
 
-export const updateWantsMobileNotifications = async (newWantsMobileNotifications: type) => {
+export const updateWantsMobileNotifications = async (
+  newWantsMobileNotifications: any,
+  token: any,
+) => {
   try {
     return await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
       method: 'POST',
-      body: JSON.stringify({ newWantsMobileNotifications: newWantsMobileNotifications }),
+      body: JSON.stringify({ token, newWantsMobileNotifications: newWantsMobileNotifications }),
     });
   } catch (error) {
     Toast.show({
@@ -88,11 +94,14 @@ export const updateWantsMobileNotifications = async (newWantsMobileNotifications
   }
 };
 
-export const updateMobileNotificationsToken = async (newMobileNotificationsToken: type) => {
+export const updateMobileNotificationsToken = async (
+  newMobileNotificationsToken: any,
+  token: any,
+) => {
   try {
     return await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
       method: 'POST',
-      body: JSON.stringify({ mobileNotificationsToken: newMobileNotificationsToken }),
+      body: JSON.stringify({ token, mobileNotificationsToken: newMobileNotificationsToken }),
     });
   } catch (error) {
     Toast.show({

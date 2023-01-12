@@ -559,12 +559,14 @@ const App = () => {
   const currentTheme = darkMode ? darkTheme : lightTheme;
 
   const updateEmailNotifications = async (newWantsEmailNotifications: boolean) => {
-    await updateWantsEmailNotifications(newWantsEmailNotifications);
+    const jwtToken = await AsyncStorage.getItem(JWT_TOKEN_KEY);
+    await updateWantsEmailNotifications(newWantsEmailNotifications, jwtToken);
     setWantsEmailNotifications(newWantsEmailNotifications);
   };
 
   const updateMobileNotifications = async (newWantsMobileNotifications: boolean) => {
-    await updateWantsEmailNotifications(newWantsMobileNotifications);
+    const jwtToken = await AsyncStorage.getItem(JWT_TOKEN_KEY);
+    await updateWantsEmailNotifications(newWantsMobileNotifications, jwtToken);
     setWantsMobileNotifications(newWantsMobileNotifications);
   };
 
@@ -620,9 +622,10 @@ const App = () => {
     messaging()
       .registerDeviceForRemoteMessages()
       .then(async () => {
-        const token = await messaging().getToken();
-        await updateMobileNotificationsToken(token);
-        console.log(`TOKEN: ${token}`);
+        const notificationsToken = await messaging().getToken();
+        const jwtToken = await AsyncStorage.getItem(JWT_TOKEN_KEY);
+        await updateMobileNotificationsToken(notificationsToken, jwtToken);
+        console.log(`TOKEN: ${notificationsToken}`);
       });
   }, []);
 
