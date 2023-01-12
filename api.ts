@@ -58,38 +58,20 @@ export const getUserForToken = async (token: any) => {
   } catch (error) {}
 };
 
-export const updateWantsEmailNotifications = async (
-  newWantsEmailNotifications: any,
-  token: any,
-) => {
+export const updateSettings = async (updateObject: any, token: any) => {
   try {
     return await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
       method: 'POST',
-      body: JSON.stringify({ token, wantsEmailNotifications: newWantsEmailNotifications }),
+      body: JSON.stringify({
+        token,
+        updateObject,
+      }),
     });
   } catch (error) {
     Toast.show({
       type: 'error',
       text1: 'Failed',
-      text2: 'Failed to update email notification setting',
-    });
-  }
-};
-
-export const updateWantsMobileNotifications = async (
-  newWantsMobileNotifications: any,
-  token: any,
-) => {
-  try {
-    return await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
-      method: 'POST',
-      body: JSON.stringify({ token, newWantsMobileNotifications: newWantsMobileNotifications }),
-    });
-  } catch (error) {
-    Toast.show({
-      type: 'error',
-      text1: 'Failed',
-      text2: 'Failed to update mobile notification setting',
+      text2: 'Failed to update settings',
     });
   }
 };
@@ -101,7 +83,12 @@ export const updateMobileNotificationsToken = async (
   try {
     return await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
       method: 'POST',
-      body: JSON.stringify({ token, mobileNotificationsToken: newMobileNotificationsToken }),
+      body: JSON.stringify({
+        token,
+        updateObject: {
+          mobileNotificationsToken: newMobileNotificationsToken,
+        },
+      }),
     });
   } catch (error) {
     Toast.show({

@@ -48,7 +48,9 @@ import {
   getTrackedTVShows,
   getUserForToken,
   updateMobileNotificationsToken,
+  updateSettings,
   updateWantsEmailNotifications,
+  updateWantsMobileNotifications,
 } from './api';
 
 const LoginScreen = ({
@@ -459,51 +461,83 @@ function SettingsScreen({
   wantsMobileNotifications,
   setWantsMobileNotifications,
   setIsloggedIn,
+  saveUpdatedSettings,
 }) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogout = async () => {
     await AsyncStorage.setItem(JWT_TOKEN_KEY, '');
     setIsloggedIn(false);
   };
 
+  const handleSaveSettings = async () => {
+    setIsLoading(true);
+    await saveUpdatedSettings();
+    setIsLoading(false);
+    Toast.show({
+      type: 'info',
+      text1: 'New settings saved successfully',
+      visibilityTime: 1500,
+    });
+  };
+
   return (
     <View style={styles.flatlistView}>
-      <View style={styles.settingsItem}>
-        <Text style={styles.settingsText}>Dark mode</Text>
-        <Switch
-          trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
-          ios_backgroundColor="#3e3e3e"
-          onValueChange={toggleDarkMode}
-          value={darkMode}
-        />
+      <View style={{ flex: 8 }}>
+        <View style={styles.settingsItem}>
+          <Text style={styles.settingsText}>Dark mode</Text>
+          <Switch
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={toggleDarkMode}
+            value={darkMode}
+          />
+        </View>
+        <View style={styles.settingsItem}>
+          <Text style={styles.settingsText}>Email Notifications</Text>
+          <Switch
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={wantsEmailNotifications ? '#f5dd4b' : '#f4f3f4'}
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={() => setWantsEmailNotifications(prevState => !prevState)}
+            value={wantsEmailNotifications}
+          />
+        </View>
+        <View style={styles.settingsItem}>
+          <Text style={styles.settingsText}>Push Notifications</Text>
+          <Switch
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={wantsMobileNotifications ? '#f5dd4b' : '#f4f3f4'}
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={() => setWantsMobileNotifications(prevState => !prevState)}
+            value={wantsMobileNotifications}
+          />
+        </View>
+        <View
+          style={{
+            justifyContent: 'center',
+            alignContent: 'center',
+            width: '100%',
+            flexDirection: 'row',
+          }}>
+          <TouchableOpacity
+            style={{ ...styles.loginBtn, marginTop: 20 }}
+            onPress={handleSaveSettings}
+            disabled={isLoading}>
+            <Text style={styles.loginText}>{isLoading ? <ActivityIndicator /> : <>SAVE</>}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={styles.settingsItem}>
-        <Text style={styles.settingsText}>Email Notifications</Text>
-        <Switch
-          trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={wantsEmailNotifications ? '#f5dd4b' : '#f4f3f4'}
-          ios_backgroundColor="#3e3e3e"
-          onValueChange={() => setWantsEmailNotifications(prevState => !prevState)}
-          value={wantsEmailNotifications}
-        />
-      </View>
-      <View style={styles.settingsItem}>
-        <Text style={styles.settingsText}>Push Notifications</Text>
-        <Switch
-          trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={wantsMobileNotifications ? '#f5dd4b' : '#f4f3f4'}
-          ios_backgroundColor="#3e3e3e"
-          onValueChange={() => setWantsMobileNotifications(prevState => !prevState)}
-          value={wantsMobileNotifications}
-        />
-      </View>
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.loginBtn} onPress={handleLogout}>
-          <Text style={styles.loginText}>LOGOUT</Text>
-        </TouchableOpacity>
+      <View style={{ flex: 3 }}>
+        <View style={styles.container}>
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <Text style={styles.loginText}>LOGOUT</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -534,7 +568,7 @@ const App = () => {
     dark: true,
     colors: {
       primary: 'rgb(67, 56, 202)',
-      secondary: '',
+      secondary: 'rgb(238, 75, 43)',
       background: 'rgb(31, 41, 55)',
       card: 'rgb(255, 255, 255)',
       text: 'rgb(255, 255, 255)',
@@ -547,7 +581,7 @@ const App = () => {
     dark: false,
     colors: {
       primary: 'rgb(67, 56, 202)',
-      secondary: 'rgb(67 56 202)',
+      secondary: 'rgb(238, 75, 43)',
       background: 'rgb(255, 255, 255)',
       card: 'rgb(255, 255, 255)',
       text: 'rgb(0, 0, 0)',
@@ -558,16 +592,13 @@ const App = () => {
 
   const currentTheme = darkMode ? darkTheme : lightTheme;
 
-  const updateEmailNotifications = async (newWantsEmailNotifications: boolean) => {
+  const saveUpdatedSettings = async () => {
     const jwtToken = await AsyncStorage.getItem(JWT_TOKEN_KEY);
-    await updateWantsEmailNotifications(newWantsEmailNotifications, jwtToken);
-    setWantsEmailNotifications(newWantsEmailNotifications);
-  };
-
-  const updateMobileNotifications = async (newWantsMobileNotifications: boolean) => {
-    const jwtToken = await AsyncStorage.getItem(JWT_TOKEN_KEY);
-    await updateWantsEmailNotifications(newWantsMobileNotifications, jwtToken);
-    setWantsMobileNotifications(newWantsMobileNotifications);
+    const updateObject = {
+      wantsEmailNotifications,
+      wantsMobileNotifications,
+    };
+    await updateSettings(updateObject, jwtToken);
   };
 
   useEffect(() => {
@@ -680,10 +711,11 @@ const App = () => {
                     darkMode={darkMode}
                     toggleDarkMode={toggleDarkMode}
                     wantsEmailNotifications={wantsEmailNotifications}
-                    setWantsEmailNotifications={updateEmailNotifications}
+                    setWantsEmailNotifications={setWantsEmailNotifications}
                     wantsMobileNotifications={wantsMobileNotifications}
-                    setWantsMobileNotifications={updateMobileNotifications}
+                    setWantsMobileNotifications={setWantsMobileNotifications}
                     setIsloggedIn={setisLoggedIn}
+                    saveUpdatedSettings={saveUpdatedSettings}
                   />
                 )}
               />
@@ -748,6 +780,14 @@ const makeStyles = (colors: any) =>
       justifyContent: 'center',
       marginTop: 40,
       backgroundColor: colors.primary,
+    },
+    logoutBtn: {
+      width: '80%',
+      height: 50,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 40,
+      backgroundColor: colors.secondary,
     },
     settingsText: {
       color: colors.text,
