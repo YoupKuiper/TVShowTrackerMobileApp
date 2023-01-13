@@ -27,14 +27,7 @@ import {
 import SplashScreen from 'react-native-splash-screen';
 import Toast from 'react-native-toast-message';
 
-import {
-  DARK_MODE_KEY,
-  DEFAULT_USER,
-  IMAGES_BASE_URL,
-  IMAGE_DEFAULT_SIZE,
-  JWT_TOKEN_KEY,
-  USER_KEY,
-} from './constants';
+import { DARK_MODE_KEY, IMAGES_BASE_URL, IMAGE_DEFAULT_SIZE, JWT_TOKEN_KEY } from './constants';
 import { useAsyncStorage } from './hooks/sticky-state-hook';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -49,8 +42,6 @@ import {
   getUserForToken,
   updateMobileNotificationsToken,
   updateSettings,
-  updateWantsEmailNotifications,
-  updateWantsMobileNotifications,
 } from './api';
 
 const LoginScreen = ({
@@ -637,44 +628,48 @@ const App = () => {
       console.log('showed toast with notification');
       Toast.show({
         type: 'info',
-        text1: 'Notification caused app to open from background state:',
-        text2: remoteMessage?.notification?.toString() || 'no text in notification',
+        text1: remoteMessage.notification?.title,
+        text2: remoteMessage?.notification?.body,
       });
     });
 
-    messaging().onNotificationOpenedApp(remoteMessage => {
-      console.log('opened app after clicking notification');
-      Toast.show({
-        type: 'info',
-        text1: 'Clicked notificaion to open the app',
-        text2: remoteMessage?.notification?.toString() || 'no text in notification',
-      });
-      // navigation.navigate(remoteMessage.data.type);
-    });
+    // messaging().onNotificationOpenedApp(remoteMessage => {
+    //   console.log('opened app after clicking notification');
+    //   Toast.show({
+    //     type: 'info',
+    //     text1: 'Clicked notificaion to open the app',
+    //     text2: remoteMessage?.notification?.toString() || 'no text in notification',
+    //   });
+    //   // navigation.navigate(remoteMessage.data.type);
+    // });
 
-    // Check whether an initial notification is available
-    messaging()
-      .getInitialNotification()
-      .then(remoteMessage => {
-        if (remoteMessage) {
-          console.log('there was an initial notification');
-          Toast.show({
-            type: 'info',
-            text1: 'Notification caused app to open from quit state:',
-            text2: remoteMessage?.notification?.toString() || 'no text in notification',
-          });
-          // setInitialRoute(remoteMessage.data.type); // e.g. "Settings"
-        }
-        // setLoading(false);
-      });
+    // // Check whether an initial notification is available
+    // messaging()
+    //   .getInitialNotification()
+    //   .then(remoteMessage => {
+    //     if (remoteMessage) {
+    //       console.log('there was an initial notification');
+    //       Toast.show({
+    //         type: 'info',
+    //         text1: 'Notification caused app to open from quit state:',
+    //         text2: remoteMessage?.notification?.toString() || 'no text in notification',
+    //       });
+    //       // setInitialRoute(remoteMessage.data.type); // e.g. "Settings"
+    //     }
+    //     // setLoading(false);
+    //   });
 
     messaging()
       .registerDeviceForRemoteMessages()
       .then(async () => {
-        const notificationsToken = await messaging().getToken();
-        const jwtToken = await AsyncStorage.getItem(JWT_TOKEN_KEY);
-        await updateMobileNotificationsToken(notificationsToken, jwtToken);
-        console.log(`TOKEN: ${notificationsToken}`);
+        try {
+          const notificationsToken = await messaging().getToken();
+          const jwtToken = await AsyncStorage.getItem(JWT_TOKEN_KEY);
+          await updateMobileNotificationsToken(notificationsToken, jwtToken);
+          console.log(`TOKEN: ${notificationsToken}`);
+        } catch (error) {
+          console.error('failed to set registrationtoken');
+        }
       });
   }, []);
 
