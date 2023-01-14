@@ -67,4 +67,3 @@ buck-out/
 .env
 *node_modules*
 *index.android.bundle
-*assets_logo*

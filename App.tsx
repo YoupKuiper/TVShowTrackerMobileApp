@@ -16,6 +16,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Linking,
   StatusBar,
   StyleSheet,
   Switch,
@@ -170,7 +171,8 @@ const SignUpScreen = () => {
       <Text style={{ color: colors.text }}>Success!</Text>
       <Text style={{ color: colors.text }}>
         Your account has been created, please verify your email address by clicking the link in the
-        email in your inbox
+        email in your inbox.
+        <b>Please check your SPAM folder if you cannot find the email</b>
       </Text>
     </View>
   ) : (
@@ -320,6 +322,11 @@ function HomeScreen({ darkMode, refresh, setRefresh }) {
 
       queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
       setRefresh(oldrefresh => !oldrefresh);
+      Toast.show({
+        type: 'info',
+        text1: `${tvShow.name} added to watchlist`,
+        visibilityTime: 1500,
+      });
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -331,10 +338,7 @@ function HomeScreen({ darkMode, refresh, setRefresh }) {
 
   return (
     <View style={styles.flatlistView}>
-      <StatusBar
-        barStyle={darkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
-      />
+      <StatusBar />
       <SearchBar
         placeholder="Search..."
         onChangeText={setsearchString}
@@ -405,6 +409,11 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
         response.trackedTVShows.filter(tvShow => tvShow.name.includes(searchString)),
       );
       setRefresh(oldrefresh => !oldrefresh);
+      Toast.show({
+        type: 'info',
+        text1: `${tvShow.name} removed from watchlist`,
+        visibilityTime: 1500,
+      });
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -416,10 +425,7 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
 
   return (
     <View style={styles.flatlistView}>
-      <StatusBar
-        barStyle={darkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
-      />
+      <StatusBar />
       <SearchBar
         placeholder="Search..."
         onChangeText={setsearchString}
@@ -551,17 +557,10 @@ function SettingsScreen({
 
 const Tab = createBottomTabNavigator();
 
-const getDarkModeStateFromLocalStorage = async () => {
-  try {
-    return !!JSON.parse((await AsyncStorage.getItem(DARK_MODE_KEY)) || '');
-  } catch (error) {
-    return false;
-  }
-};
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [darkMode, setDarkMode] = useAsyncStorage(DARK_MODE_KEY, getDarkModeStateFromLocalStorage);
+  const [darkMode, setDarkMode] = useAsyncStorage(DARK_MODE_KEY, true);
   const [emailAddress, setEmailAddress] = useState('');
   const [wantsEmailNotifications, setWantsEmailNotifications] = useState(false);
   const [wantsMobileNotifications, setWantsMobileNotifications] = useState(false);
@@ -590,7 +589,7 @@ const App = () => {
     colors: {
       primary: 'rgb(67, 56, 202)',
       secondary: 'rgb(238, 75, 43)',
-      background: 'rgb(255, 255, 255)',
+      background: 'rgb(225, 225, 225)',
       header: 'rgb(31, 41, 55)',
       card: 'rgb(255, 255, 255)',
       text: 'rgb(0, 0, 0)',
@@ -610,6 +609,49 @@ const App = () => {
     };
     await updateSettings(updateObject, jwtToken);
   };
+
+  useEffect(() => {
+    const handleEmailVerification = async url => {
+      try {
+        const [, stringAfterDoubleSlash] = url.split('//');
+        const [, emailAddressToVerify, verifyEmailAddressToken] = stringAfterDoubleSlash.split('/');
+        console.log(`Sending: ${emailAddressToVerify}, and ${verifyEmailAddressToken}`);
+        await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
+          method: 'POST',
+          body: JSON.stringify({
+            emailAddress: emailAddressToVerify,
+            verifyEmailAddressToken,
+          }),
+        });
+        Toast.show({
+          type: 'error',
+          text1: 'Successfully verified account',
+          text2: 'Please log in to start using TV Tracker',
+        });
+      } catch (error) {
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to verify account',
+          text2: 'Please retry creating an account',
+        });
+      }
+    };
+    const linkingEvent = Linking.addEventListener('url', async data => {
+      if (data.url) {
+        console.log(`app already open: ${data.url}`);
+        await handleEmailVerification(data.url);
+      }
+    });
+    Linking.getInitialURL().then(url => {
+      console.log(`Iniitalurl ${url}`);
+      if (url) {
+        handleEmailVerification(url);
+      }
+    });
+    return () => {
+      linkingEvent.remove();
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {

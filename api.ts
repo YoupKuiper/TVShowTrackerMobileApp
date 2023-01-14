@@ -91,10 +91,10 @@ export const updateMobileNotificationsToken = async (
       }),
     });
   } catch (error) {
-    Toast.show({
-      type: 'error',
-      text1: 'Failed',
-      text2: 'Failed to set up mobile notifications',
-    });
+    // Toast.show({
+    //   type: 'error',
+    //   text1: 'Failed',
+    //   text2: 'Failed to set up mobile notifications',
+    // });
   }
 };
