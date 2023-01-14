@@ -71,12 +71,21 @@ const LoginScreen = ({
       setWantsEmailNotifications(response.wantsEmailNotifications);
       setWantsMobileNotifications(response.wantsMobileNotifications);
     } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Login Failed',
-        text2: 'Please check your credentials and retry',
-      });
-      console.log(error);
+      const text = await error.text();
+
+      if (text) {
+        Toast.show({
+          type: 'error',
+          text1: 'Login Failed',
+          text2: text,
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Login Failed',
+          text2: 'Please try again later',
+        });
+      }
     }
     setIsLoading(false);
   };
