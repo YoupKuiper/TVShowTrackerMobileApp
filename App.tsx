@@ -142,7 +142,7 @@ const SignUpScreen = () => {
       setIsLoading(true);
       await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/CreateAccount`, {
         method: 'POST',
-        body: JSON.stringify({ emailAddress, password }),
+        body: JSON.stringify({ emailAddress, password, mobile: true }),
       });
 
       setaccountCreated(true);
