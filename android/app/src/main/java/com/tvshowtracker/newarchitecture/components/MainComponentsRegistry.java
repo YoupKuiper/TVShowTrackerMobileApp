@@ -1,4 +1,4 @@
-package com.tvshowtrackerreactnative.newarchitecture.components;
+package com.tvshowtracker.newarchitecture.components;
 
 import com.facebook.jni.HybridData;
 import com.facebook.proguard.annotations.DoNotStrip;

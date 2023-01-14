@@ -1,4 +1,4 @@
-package com.tvshowtrackerreactnative.newarchitecture;
+package com.tvshowtracker.newarchitecture;
 
 import android.app.Application;
 import androidx.annotation.NonNull;
@@ -19,9 +19,9 @@ import com.facebook.react.fabric.CoreComponentsRegistry;
 import com.facebook.react.fabric.FabricJSIModuleProvider;
 import com.facebook.react.fabric.ReactNativeConfig;
 import com.facebook.react.uimanager.ViewManagerRegistry;
-import com.tvshowtrackerreactnative.BuildConfig;
-import com.tvshowtrackerreactnative.newarchitecture.components.MainComponentsRegistry;
-import com.tvshowtrackerreactnative.newarchitecture.modules.MainApplicationTurboModuleManagerDelegate;
+import com.tvshowtracker.BuildConfig;
+import com.tvshowtracker.newarchitecture.components.MainComponentsRegistry;
+import com.tvshowtracker.newarchitecture.modules.MainApplicationTurboModuleManagerDelegate;
 import java.util.ArrayList;
 import java.util.List;
 

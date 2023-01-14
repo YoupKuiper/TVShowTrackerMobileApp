@@ -1,4 +1,4 @@
-package com.tvshowtrackerreactnative;
+package com.tvshowtracker;
 
 import android.os.Bundle; // here
 import com.facebook.react.ReactActivity;
@@ -15,7 +15,7 @@ public class MainActivity extends ReactActivity {
    */
   @Override
   protected String getMainComponentName() {
-    return "TVShowTrackerReactNative";
+    return "TV Tracker";
   }
    @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "TVShowTrackerReactNative.app"
-               BlueprintName = "TVShowTrackerReactNative"
-               ReferencedContainer = "container:TVShowTrackerReactNative.xcodeproj">
+               BuildableName = "TVTracker.app"
+               BlueprintName = "TVTracker"
+               ReferencedContainer = "container:TVTracker.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "TVShowTrackerReactNativeTests.xctest"
-               BlueprintName = "TVShowTrackerReactNativeTests"
-               ReferencedContainer = "container:TVShowTrackerReactNative.xcodeproj">
+               BuildableName = "TVTrackerTests.xctest"
+               BlueprintName = "TVTrackerTests"
+               ReferencedContainer = "container:TVTracker.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "TVShowTrackerReactNative.app"
-            BlueprintName = "TVShowTrackerReactNative"
-            ReferencedContainer = "container:TVShowTrackerReactNative.xcodeproj">
+            BuildableName = "TVTracker.app"
+            BlueprintName = "TVTracker"
+            ReferencedContainer = "container:TVTracker.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "TVShowTrackerReactNative.app"
-            BlueprintName = "TVShowTrackerReactNative"
-            ReferencedContainer = "container:TVShowTrackerReactNative.xcodeproj">
+            BuildableName = "TVTracker.app"
+            BlueprintName = "TVTracker"
+            ReferencedContainer = "container:TVTracker.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

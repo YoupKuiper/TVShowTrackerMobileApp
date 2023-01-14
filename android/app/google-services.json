@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:79713360547:android:85af6f504bd6d41d143d16",
         "android_client_info": {
-          "package_name": "com.tvshowtrackerreactnative"
+          "package_name": "com.tvshowtracker"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "79713360547-ooelu4ogm95d1f3135btmdprm8gmk9so.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.tvshowtrackerreactnative",
+            "package_name": "com.tvshowtracker",
             "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
           }
         },
