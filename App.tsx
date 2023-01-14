@@ -168,11 +168,12 @@ const SignUpScreen = () => {
 
   return accountCreated ? (
     <View style={styles.container}>
-      <Text style={{ color: colors.text }}>Success!</Text>
-      <Text style={{ color: colors.text }}>
-        Your account has been created, please verify your email address by clicking the link in the
-        email in your inbox.
-        <b>Please check your SPAM folder if you cannot find the email</b>
+      <Text style={{ color: colors.text, paddingHorizontal: 20 }}>
+        Your account has been created!
+      </Text>
+      <Text style={{ color: colors.text, paddingHorizontal: 40, paddingTop: 10 }}>
+        Please verify your email address by clicking the link in the email in your{' '}
+        <Text style={{ fontWeight: 'bold' }}>inbox or spam folder</Text>.
       </Text>
     </View>
   ) : (
@@ -220,6 +221,7 @@ const SignUpScreen = () => {
 };
 
 import { PureComponent } from 'react';
+import { blob } from 'stream/consumers';
 class ListViewItem extends PureComponent<any> {
   constructor(props) {
     super(props);
@@ -615,7 +617,6 @@ const App = () => {
       try {
         const [, stringAfterDoubleSlash] = url.split('//');
         const [, emailAddressToVerify, verifyEmailAddressToken] = stringAfterDoubleSlash.split('/');
-        console.log(`Sending: ${emailAddressToVerify}, and ${verifyEmailAddressToken}`);
         await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/UpdateUser`, {
           method: 'POST',
           body: JSON.stringify({
@@ -638,12 +639,10 @@ const App = () => {
     };
     const linkingEvent = Linking.addEventListener('url', async data => {
       if (data.url) {
-        console.log(`app already open: ${data.url}`);
         await handleEmailVerification(data.url);
       }
     });
     Linking.getInitialURL().then(url => {
-      console.log(`Iniitalurl ${url}`);
       if (url) {
         handleEmailVerification(url);
       }
@@ -664,6 +663,7 @@ const App = () => {
         setWantsMobileNotifications(response.wantsMobileNotifications);
         SplashScreen.hide();
       }
+      SplashScreen.hide();
     })();
 
     messaging().onMessage(remoteMessage => {
