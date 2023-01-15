@@ -50,12 +50,33 @@ const LoginScreen = ({
   setEmailAddress,
   setWantsEmailNotifications,
   setWantsMobileNotifications,
+  setIsloggedIn,
 }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotPasswordForm, setIsForgotPasswordForm] = useState(false);
+  const [message, setMessage] = useState('');
 
   const { colors } = useTheme();
   const styles = makeStyles(colors);
+
+  const handleResetPassword = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/ResetPassword`, {
+        method: 'POST',
+        body: JSON.stringify({ emailAddress }),
+      });
+
+      setMessage(response.text());
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to send reset password email',
+        text2: 'Please double check your email address',
+      });
+    }
+  };
 
   const handleLogin = async () => {
     try {
@@ -70,16 +91,16 @@ const LoginScreen = ({
       setEmailAddress(response.emailAddress);
       setWantsEmailNotifications(response.wantsEmailNotifications);
       setWantsMobileNotifications(response.wantsMobileNotifications);
+      setIsloggedIn(true);
     } catch (error) {
-      const text = await error.text();
-
-      if (text) {
+      try {
+        const text = await error.text();
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
           text2: text,
         });
-      } else {
+      } catch (err) {
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
@@ -90,11 +111,43 @@ const LoginScreen = ({
     setIsLoading(false);
   };
 
-  return isLoading ? (
-    <View style={styles.container}>
-      <ActivityIndicator />
-    </View>
-  ) : (
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (isForgotPasswordForm) {
+    return (
+      <View style={styles.container}>
+        <Image style={styles.image} source={require('./assets/logo.png')} />
+        {message ? (
+          <View style={styles.inputView}>{message}</View>
+        ) : (
+          <View>
+            <View style={styles.inputView}>
+              <TextInput
+                style={styles.TextInput}
+                placeholder="Email Address"
+                textAlign={'center'}
+                placeholderTextColor="#003f5c"
+                value={emailAddress}
+                onChangeText={email => setEmailAddress(email)}
+                autoCapitalize={'none'}
+              />
+            </View>
+            <TouchableOpacity style={styles.loginBtn} onPress={handleResetPassword}>
+              <Text style={styles.buttonText}>RESET PASSWORD</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  return (
     <View style={styles.container}>
       <Image style={styles.image} source={require('./assets/logo.png')} />
       <View style={styles.inputView}>
@@ -120,7 +173,9 @@ const LoginScreen = ({
         />
       </View>
       <TouchableOpacity>
-        <Text style={styles.forgot_button}>Forgot Password?</Text>
+        <Text style={styles.forgot_button} onPress={() => setIsForgotPasswordForm(true)}>
+          Forgot Password?
+        </Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
         <Text style={styles.buttonText}>LOGIN</Text>
@@ -801,6 +856,7 @@ const App = () => {
                     setEmailAddress={setEmailAddress}
                     setWantsEmailNotifications={setWantsEmailNotifications}
                     setWantsMobileNotifications={setWantsMobileNotifications}
+                    setisLoggedIn={setisLoggedIn}
                   />
                 )}
               />
