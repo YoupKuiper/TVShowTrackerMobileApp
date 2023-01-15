@@ -91,19 +91,20 @@ const LoginScreen = ({
         method: 'POST',
         body: JSON.stringify({ emailAddress: emailAddress.trim(), password: password.trim() }),
       });
-
       await AsyncStorage.setItem(JWT_TOKEN_KEY, response.token);
       setEmailAddress(response.emailAddress);
       setWantsEmailNotifications(response.wantsEmailNotifications);
       setWantsMobileNotifications(response.wantsMobileNotifications);
+      console.log('no error here');
       setIsloggedIn(true);
+      console.log('still no error here');
     } catch (error) {
       try {
-        const text = await error.message;
+        const text = await error;
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
-          text2: text,
+          text2: text.message,
         });
       } catch (err) {
         Toast.show({
@@ -634,7 +635,7 @@ const App = () => {
   const [wantsEmailNotifications, setWantsEmailNotifications] = useState(false);
   const [wantsMobileNotifications, setWantsMobileNotifications] = useState(false);
   const [refresh, setRefresh] = useState(false);
-  const [isLoggedIn, setisLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const toggleDarkMode = () => setDarkMode(previousState => !previousState);
 
@@ -723,7 +724,7 @@ const App = () => {
     (async () => {
       const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
       if (token) {
-        setisLoggedIn(true);
+        setIsLoggedIn(true);
         const response: any = await getUserForToken(token);
         setEmailAddress(response.emailAddress);
         setWantsEmailNotifications(response.wantsEmailNotifications);
@@ -843,7 +844,7 @@ const App = () => {
                     setWantsEmailNotifications={setWantsEmailNotifications}
                     wantsMobileNotifications={wantsMobileNotifications}
                     setWantsMobileNotifications={setWantsMobileNotifications}
-                    setIsloggedIn={setisLoggedIn}
+                    setIsloggedIn={setIsLoggedIn}
                     saveUpdatedSettings={saveUpdatedSettings}
                   />
                 )}
@@ -859,7 +860,7 @@ const App = () => {
                     setEmailAddress={setEmailAddress}
                     setWantsEmailNotifications={setWantsEmailNotifications}
                     setWantsMobileNotifications={setWantsMobileNotifications}
-                    setisLoggedIn={setisLoggedIn}
+                    setIsloggedIn={setIsLoggedIn}
                   />
                 )}
               />

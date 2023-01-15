@@ -6,7 +6,7 @@ import { Toast } from 'react-native-toast-message/lib/src/Toast';
 export const fetcher = async <T>(input: RequestInfo, init?: RequestInit) => {
   const response = await fetch(input, init);
   if (!response.ok) {
-    throw response;
+    throw response.json() as Promise<T>;
   }
   return response.json() as Promise<T>;
 };
