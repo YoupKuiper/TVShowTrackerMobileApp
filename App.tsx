@@ -55,7 +55,6 @@ const LoginScreen = ({
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isForgotPasswordForm, setIsForgotPasswordForm] = useState(false);
-  const [message, setMessage] = useState('');
 
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -63,12 +62,17 @@ const LoginScreen = ({
   const handleResetPassword = async () => {
     try {
       setIsLoading(true);
-      const response = await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/ResetPassword`, {
+      await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/ResetPassword`, {
         method: 'POST',
-        body: JSON.stringify({ emailAddress }),
+        body: JSON.stringify({ emailAddress: emailAddress.trim() }),
       });
 
-      setMessage(response.text());
+      Toast.show({
+        type: 'info',
+        text1: 'Reset password email sent',
+        text2: 'Follow email instructions to reset your password',
+      });
+      setIsForgotPasswordForm(false);
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -76,6 +80,7 @@ const LoginScreen = ({
         text2: 'Please double check your email address',
       });
     }
+    setIsLoading(false);
   };
 
   const handleLogin = async () => {
@@ -84,7 +89,7 @@ const LoginScreen = ({
       setIsLoading(true);
       const response: any = await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/Login`, {
         method: 'POST',
-        body: JSON.stringify({ emailAddress, password }),
+        body: JSON.stringify({ emailAddress: emailAddress.trim(), password: password.trim() }),
       });
 
       await AsyncStorage.setItem(JWT_TOKEN_KEY, response.token);
@@ -94,7 +99,7 @@ const LoginScreen = ({
       setIsloggedIn(true);
     } catch (error) {
       try {
-        const text = await error.text();
+        const text = await error.message;
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
@@ -123,26 +128,20 @@ const LoginScreen = ({
     return (
       <View style={styles.container}>
         <Image style={styles.image} source={require('./assets/logo.png')} />
-        {message ? (
-          <View style={styles.inputView}>{message}</View>
-        ) : (
-          <View>
-            <View style={styles.inputView}>
-              <TextInput
-                style={styles.TextInput}
-                placeholder="Email Address"
-                textAlign={'center'}
-                placeholderTextColor="#003f5c"
-                value={emailAddress}
-                onChangeText={email => setEmailAddress(email)}
-                autoCapitalize={'none'}
-              />
-            </View>
-            <TouchableOpacity style={styles.loginBtn} onPress={handleResetPassword}>
-              <Text style={styles.buttonText}>RESET PASSWORD</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={styles.inputView}>
+          <TextInput
+            style={styles.TextInput}
+            placeholder="Email Address"
+            textAlign={'center'}
+            placeholderTextColor="#003f5c"
+            value={emailAddress}
+            onChangeText={email => setEmailAddress(email)}
+            autoCapitalize={'none'}
+          />
+        </View>
+        <TouchableOpacity style={styles.loginBtn} onPress={handleResetPassword}>
+          <Text style={styles.buttonText}>RESET PASSWORD</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -206,7 +205,11 @@ const SignUpScreen = () => {
       setIsLoading(true);
       await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/CreateAccount`, {
         method: 'POST',
-        body: JSON.stringify({ emailAddress, password, mobile: true }),
+        body: JSON.stringify({
+          emailAddress: emailAddress.trim(),
+          password: password.trim(),
+          mobile: true,
+        }),
       });
 
       setaccountCreated(true);
