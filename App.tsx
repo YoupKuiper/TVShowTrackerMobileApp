@@ -19,6 +19,7 @@ import {
   ActivityIndicator,
   Image,
   Linking,
+  RefreshControl,
   StatusBar,
   StyleSheet,
   Switch,
@@ -398,15 +399,15 @@ function SearchScreen({ darkMode, refresh, setRefresh }) {
 
       queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
       setRefresh(oldrefresh => !oldrefresh);
+
       Toast.show({
         type: 'info',
         text1: `${tvShow.name} added to watchlist`,
         visibilityTime: 1500,
       });
-      requestNotifications(['alert', 'sound']).then(({ status, settings }) => {
-        console.log(status);
-        console.log(settings);
-      });
+      setTimeout(() => {
+        requestNotifications(['alert', 'sound']);
+      }, 2000);
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -436,6 +437,16 @@ function SearchScreen({ darkMode, refresh, setRefresh }) {
           keyExtractor={item => item.id}
           extraData={refresh}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={queryTrackedTVShows.isLoading}
+              onRefresh={() => {
+                console.log('refreshing');
+                queryClient.invalidateQueries(['popular', searchString]);
+                setRefresh(oldrefresh => !oldrefresh);
+              }}
+            />
+          }
           renderItem={item => {
             return (
               <ListViewItem
@@ -512,6 +523,16 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
         keyExtractor={item => item.id}
         extraData={refresh}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={queryTrackedTVShows.isLoading}
+            onRefresh={() => {
+              console.log('refreshing');
+              queryClient.invalidateQueries(['tracked', searchString]);
+              setRefresh(oldrefresh => !oldrefresh);
+            }}
+          />
+        }
         renderItem={item => (
           <ListViewItem
             tvShow={item.item}
@@ -837,8 +858,8 @@ const App = () => {
             tabBarIcon: ({ focused, size }) => {
               let iconName;
 
-              if (route.name === 'Home') {
-                iconName = focused ? 'ios-information-circle' : 'ios-information-circle-outline';
+              if (route.name === 'Search') {
+                iconName = focused ? 'ios-search' : 'ios-search-outline';
               } else if (route.name === 'Settings') {
                 iconName = focused ? 'ios-list' : 'ios-list-outline';
               } else if (route.name === 'Watchlist') {
