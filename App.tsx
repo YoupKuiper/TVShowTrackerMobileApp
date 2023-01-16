@@ -13,6 +13,8 @@ import messaging from '@react-native-firebase/messaging';
 import { NavigationContainer, useTheme } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
+import { check, PERMISSIONS, requestNotifications, RESULTS } from 'react-native-permissions';
+
 import {
   ActivityIndicator,
   Image,
@@ -95,9 +97,13 @@ const LoginScreen = ({
       setEmailAddress(response.emailAddress);
       setWantsEmailNotifications(response.wantsEmailNotifications);
       setWantsMobileNotifications(response.wantsMobileNotifications);
-      console.log('no error here');
       setIsloggedIn(true);
-      console.log('still no error here');
+      try {
+        const mobileNotificationsToken = await messaging().getToken();
+        updateMobileNotificationsToken(mobileNotificationsToken, response.token);
+      } catch (error) {
+        console.log('failed to update mobile token, but should be kept silent');
+      }
     } catch (error) {
       try {
         const text = await error;
@@ -221,7 +227,7 @@ const SignUpScreen = () => {
         text2: 'Account creation failed',
       });
 
-      console.log(error);
+      console.log(await error);
     }
     setIsLoading(false);
   };
@@ -289,7 +295,7 @@ const SignUpScreen = () => {
 };
 
 import { PureComponent } from 'react';
-import { blob } from 'stream/consumers';
+
 class ListViewItem extends PureComponent<any> {
   constructor(props) {
     super(props);
@@ -313,7 +319,7 @@ class ListViewItem extends PureComponent<any> {
           width: '100%',
           flexDirection: 'row',
           flexWrap: 'wrap',
-          marginBottom: 2,
+          marginBottom: 1,
           borderColor: this.props.colors.border,
           borderBottomWidth: 1,
         }}>
@@ -354,7 +360,7 @@ class ListViewItem extends PureComponent<any> {
   }
 }
 
-function HomeScreen({ darkMode, refresh, setRefresh }) {
+function SearchScreen({ darkMode, refresh, setRefresh }) {
   const { colors } = useTheme();
   const [searchString, setsearchString] = useState('');
   const styles = makeStyles(colors);
@@ -396,6 +402,10 @@ function HomeScreen({ darkMode, refresh, setRefresh }) {
         type: 'info',
         text1: `${tvShow.name} added to watchlist`,
         visibilityTime: 1500,
+      });
+      requestNotifications(['alert', 'sound']).then(({ status, settings }) => {
+        console.log(status);
+        console.log(settings);
       });
     } catch (error) {
       Toast.show({
@@ -473,6 +483,7 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
           },
         }),
       });
+
       queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
       queryClient.setQueryData(
         ['tracked', searchString],
@@ -485,6 +496,7 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
         visibilityTime: 1500,
       });
     } catch (error) {
+      console.log(error);
       Toast.show({
         type: 'error',
         text1: 'Failed',
@@ -492,6 +504,30 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
       });
     }
   };
+
+  const listViewContent =
+    queryTrackedTVShows.data && queryTrackedTVShows.data.length ? (
+      <FlatList
+        data={queryTrackedTVShows.data}
+        keyExtractor={item => item.id}
+        extraData={refresh}
+        keyboardShouldPersistTaps="handled"
+        renderItem={item => (
+          <ListViewItem
+            tvShow={item.item}
+            isWatchlistItem={true}
+            shouldShowButton={true}
+            handleButtonClick={removeShow}
+            colors={colors}
+          />
+        )}
+      />
+    ) : (
+      <Text style={{ color: colors.text, textAlign: 'center', paddingTop: 10 }}>
+        {' '}
+        No TV shows found{' '}
+      </Text>
+    );
 
   return (
     <View style={styles.flatlistView}>
@@ -504,25 +540,7 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
         inputStyle={{ backgroundColor: colors.header }}
         inputContainerStyle={{ backgroundColor: colors.header }}
       />
-      {queryTrackedTVShows.isLoading ? (
-        <ActivityIndicator />
-      ) : (
-        <FlatList
-          data={queryTrackedTVShows.data}
-          keyExtractor={item => item.id}
-          extraData={refresh}
-          keyboardShouldPersistTaps="handled"
-          renderItem={item => (
-            <ListViewItem
-              tvShow={item.item}
-              isWatchlistItem={true}
-              shouldShowButton={true}
-              handleButtonClick={removeShow}
-              colors={colors}
-            />
-          )}
-        />
-      )}
+      {queryTrackedTVShows.isLoading ? <ActivityIndicator /> : listViewContent}
     </View>
   );
 }
@@ -548,7 +566,7 @@ function SettingsScreen({
       toggleDarkMode();
       toggleDarkMode();
     })();
-  }, []);
+  }, [toggleDarkMode, wantsEmailNotifications, wantsMobileNotifications]);
 
   const handleLogout = async () => {
     await AsyncStorage.setItem(JWT_TOKEN_KEY, '');
@@ -567,52 +585,72 @@ function SettingsScreen({
   };
 
   return (
-    <View style={styles.flatlistView}>
-      <View style={{ flex: 8 }}>
-        <View style={styles.settingsItem}>
-          <Text style={styles.settingsText}>Dark mode</Text>
-          <Switch
-            trackColor={{ false: '#767577', true: '#81b0ff' }}
-            thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
-            ios_backgroundColor="#3e3e3e"
-            onValueChange={toggleDarkMode}
-            value={darkMode}
-          />
-        </View>
-        <View style={styles.settingsItem}>
-          <Text style={styles.settingsText}>Email Notifications</Text>
-          <Switch
-            trackColor={{ false: '#767577', true: '#81b0ff' }}
-            thumbColor={wantsEmailNotifications ? '#f5dd4b' : '#f4f3f4'}
-            ios_backgroundColor="#3e3e3e"
-            onValueChange={() => setWantsEmailNotifications(prevState => !prevState)}
-            value={wantsEmailNotifications}
-          />
-        </View>
-        <View style={styles.settingsItem}>
-          <Text style={styles.settingsText}>Push Notifications</Text>
-          <Switch
-            trackColor={{ false: '#767577', true: '#81b0ff' }}
-            thumbColor={wantsMobileNotifications ? '#f5dd4b' : '#f4f3f4'}
-            ios_backgroundColor="#3e3e3e"
-            onValueChange={() => setWantsMobileNotifications(prevState => !prevState)}
-            value={wantsMobileNotifications}
-          />
-        </View>
-        <View
-          style={{
-            justifyContent: 'center',
-            alignContent: 'center',
-            width: '100%',
-            flexDirection: 'row',
-          }}>
-          <TouchableOpacity
-            style={{ ...styles.loginBtn, marginTop: 20 }}
-            onPress={handleSaveSettings}
-            disabled={isLoading}>
-            <Text style={styles.buttonText}>{isLoading ? <ActivityIndicator /> : <>SAVE</>}</Text>
-          </TouchableOpacity>
-        </View>
+    <View style={{ ...styles.flatlistView, flex: 8 }}>
+      <Text
+        style={{
+          paddingLeft: 10,
+          fontWeight: 'bold',
+          color: colors.text,
+          flex: 0.5,
+          textAlignVertical: 'center',
+          backgroundColor: 'rgb(150,150,150)',
+        }}>
+        Theme
+      </Text>
+      <View style={{ ...styles.settingsItem, borderTopColor: colors.border, borderTopWidth: 1 }}>
+        <Text style={styles.settingsText}>Dark mode</Text>
+        <Switch
+          trackColor={{ false: '#767577', true: '#81b0ff' }}
+          thumbColor={darkMode ? '#f5dd4b' : '#f4f3f4'}
+          // ios_backgroundColor="#3e3e3e"
+          onValueChange={toggleDarkMode}
+          value={darkMode}
+        />
+      </View>
+      <Text
+        style={{
+          paddingLeft: 10,
+          fontWeight: 'bold',
+          color: colors.text,
+          flex: 0.5,
+          textAlignVertical: 'center',
+          backgroundColor: 'rgb(150,150,150)',
+        }}>
+        Notifications (Save to confirm changes)
+      </Text>
+      <View style={{ ...styles.settingsItem, borderTopColor: colors.border, borderTopWidth: 1 }}>
+        <Text style={styles.settingsText}>Email Notifications</Text>
+        <Switch
+          trackColor={{ false: '#767577', true: '#81b0ff' }}
+          thumbColor={wantsEmailNotifications ? '#f5dd4b' : '#f4f3f4'}
+          // ios_backgroundColor="#3e3e3e"
+          onValueChange={() => setWantsEmailNotifications(prevState => !prevState)}
+          value={wantsEmailNotifications}
+        />
+      </View>
+      <View style={styles.settingsItem}>
+        <Text style={styles.settingsText}>Push Notifications</Text>
+        <Switch
+          trackColor={{ false: '#767577', true: '#81b0ff' }}
+          thumbColor={wantsMobileNotifications ? '#f5dd4b' : '#f4f3f4'}
+          // ios_backgroundColor="#3e3e3e"
+          onValueChange={() => setWantsMobileNotifications(prevState => !prevState)}
+          value={wantsMobileNotifications}
+        />
+      </View>
+      <View
+        style={{
+          justifyContent: 'center',
+          alignContent: 'center',
+          width: '100%',
+          flexDirection: 'row',
+        }}>
+        <TouchableOpacity
+          style={{ ...styles.loginBtn, marginTop: 20 }}
+          onPress={handleSaveSettings}
+          disabled={isLoading}>
+          <Text style={styles.buttonText}>{isLoading ? <ActivityIndicator /> : <>SAVE</>}</Text>
+        </TouchableOpacity>
       </View>
       <View style={{ flex: 3 }}>
         <View style={styles.container}>
@@ -735,7 +773,6 @@ const App = () => {
     })();
 
     messaging().onMessage(remoteMessage => {
-      console.log('showed toast with notification');
       Toast.show({
         type: 'info',
         text1: remoteMessage.notification?.title,
@@ -775,8 +812,10 @@ const App = () => {
         try {
           const notificationsToken = await messaging().getToken();
           const jwtToken = await AsyncStorage.getItem(JWT_TOKEN_KEY);
-          await updateMobileNotificationsToken(notificationsToken, jwtToken);
-          console.log(`TOKEN: ${notificationsToken}`);
+          if (jwtToken) {
+            await updateMobileNotificationsToken(notificationsToken, jwtToken);
+            console.log(`TOKEN: ${notificationsToken}`);
+          }
         } catch (error) {
           console.error('failed to set registrationtoken');
         }
@@ -823,9 +862,9 @@ const App = () => {
           {isLoggedIn ? (
             <>
               <Tab.Screen
-                name="Home"
+                name="Search"
                 children={() => (
-                  <HomeScreen darkMode={darkMode} refresh={refresh} setRefresh={setRefresh} />
+                  <SearchScreen darkMode={darkMode} refresh={refresh} setRefresh={setRefresh} />
                 )}
               />
               <Tab.Screen
@@ -836,6 +875,7 @@ const App = () => {
               />
               <Tab.Screen
                 name="Settings"
+                options={{ title: emailAddress, tabBarLabel: 'Settings' }}
                 children={() => (
                   <SettingsScreen
                     darkMode={darkMode}
@@ -929,6 +969,7 @@ const makeStyles = (colors: any) =>
       textAlignVertical: 'center',
       paddingLeft: 10,
       flex: 4,
+      fontStyle: 'italic',
     },
     settingsItem: { flexDirection: 'row', borderBottomColor: colors.border, borderBottomWidth: 1 },
   });
