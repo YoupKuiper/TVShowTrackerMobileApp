@@ -163,6 +163,7 @@ const LoginScreen = ({
           textAlign={'center'}
           placeholderTextColor="#003f5c"
           value={emailAddress}
+          selectTextOnFocus={true}
           onChangeText={email => setEmailAddress(email)}
           autoCapitalize={'none'}
         />
@@ -948,7 +949,8 @@ const makeStyles = (colors: any) =>
       alignItems: 'center',
     },
     TextInput: {
-      height: 50,
+      height: '100%',
+      width: '100%',
       flex: 1,
       padding: 10,
       color: '#003f5c',
