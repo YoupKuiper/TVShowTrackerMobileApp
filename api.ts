@@ -13,6 +13,7 @@ export const fetcher = async <T>(input: RequestInfo, init?: RequestInit) => {
 
 export const getTrackedTVShows = async (searchString: string): Promise<any> => {
   try {
+    console.debug('getting tracked');
     const token = await AsyncStorage.getItem(JWT_TOKEN_KEY);
     const tvShows = await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/GetTrackedTVShows`, {
       method: 'POST',

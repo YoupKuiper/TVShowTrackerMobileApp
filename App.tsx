@@ -19,7 +19,6 @@ import {
   ActivityIndicator,
   Image,
   Linking,
-  RefreshControl,
   StatusBar,
   StyleSheet,
   Switch,
@@ -373,9 +372,13 @@ function SearchScreen({ darkMode, refresh, setRefresh }) {
       staleTime: 60000,
     },
   );
-  const queryTrackedTVShows = useQuery(['tracked', ''], () => getTrackedTVShows(''), {
-    staleTime: 60000,
-  });
+  const { data: queryTrackedData, refetch } = useQuery(
+    ['tracked', ''],
+    () => getTrackedTVShows(''),
+    {
+      staleTime: 60000,
+    },
+  );
 
   const isAlreadyInTrackedList = (tvShow, trackedTVShows) => {
     if (trackedTVShows) {
@@ -392,13 +395,16 @@ function SearchScreen({ darkMode, refresh, setRefresh }) {
         body: JSON.stringify({
           token,
           updateObject: {
-            trackedTVShows: [...queryTrackedTVShows.data, tvShow],
+            trackedTVShows: [...queryTrackedData, tvShow],
           },
         }),
       });
 
-      queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
-      setRefresh(oldrefresh => !oldrefresh);
+      queryClient.setQueryData(['tracked', ''], oldShows => {
+        return [...oldShows, tvShow];
+      });
+      refetch();
+      setRefresh(Math.floor(Math.random() * 1000) + 1);
 
       Toast.show({
         type: 'info',
@@ -409,6 +415,7 @@ function SearchScreen({ darkMode, refresh, setRefresh }) {
         requestNotifications(['alert', 'sound']);
       }, 2000);
     } catch (error) {
+      console.log(error);
       Toast.show({
         type: 'error',
         text1: 'Failed',
@@ -437,23 +444,13 @@ function SearchScreen({ darkMode, refresh, setRefresh }) {
           keyExtractor={item => item.id}
           extraData={refresh}
           keyboardShouldPersistTaps="handled"
-          refreshControl={
-            <RefreshControl
-              refreshing={queryTrackedTVShows.isLoading}
-              onRefresh={() => {
-                console.log('refreshing');
-                queryClient.invalidateQueries(['popular', searchString]);
-                setRefresh(oldrefresh => !oldrefresh);
-              }}
-            />
-          }
           renderItem={item => {
             return (
               <ListViewItem
                 tvShow={item.item}
                 isWatchlistItem={false}
                 handleButtonClick={addShow}
-                shouldShowButton={!isAlreadyInTrackedList(item.item, queryTrackedTVShows.data)}
+                shouldShowButton={!isAlreadyInTrackedList(item.item, queryTrackedData)}
                 colors={colors}
               />
             );
@@ -469,7 +466,7 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
   const [searchString, setsearchString] = useState('');
   const styles = makeStyles(colors);
 
-  const queryTrackedTVShows = useQuery(
+  const { data, isLoading, refetch } = useQuery(
     ['tracked', searchString],
     () => getTrackedTVShows(searchString),
     {
@@ -495,12 +492,18 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
         }),
       });
 
-      queryClient.setQueryData(['tracked', ''], response.trackedTVShows);
-      queryClient.setQueryData(
-        ['tracked', searchString],
-        response.trackedTVShows.filter(tvShow => tvShow.name.includes(searchString)),
+      queryClient.setQueryData(['tracked', ''], oldTrackedShows =>
+        oldTrackedShows.filter(oldShow => tvShow.id !== oldShow.id),
       );
-      setRefresh(oldrefresh => !oldrefresh);
+      if (searchString) {
+        queryClient.setQueryData(['tracked', searchString], oldTrackedShows =>
+          oldTrackedShows.filter(
+            oldShow => tvShow.id !== oldShow.id && tvShow.name.includes(searchString),
+          ),
+        );
+      }
+      refetch();
+      setRefresh(Math.floor(Math.random() * 1000) + 1);
       Toast.show({
         type: 'info',
         text1: `${tvShow.name} removed from watchlist`,
@@ -517,22 +520,12 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
   };
 
   const listViewContent =
-    queryTrackedTVShows.data && queryTrackedTVShows.data.length ? (
+    data && data.length ? (
       <FlatList
-        data={queryTrackedTVShows.data}
+        data={data}
         keyExtractor={item => item.id}
         extraData={refresh}
         keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl
-            refreshing={queryTrackedTVShows.isLoading}
-            onRefresh={() => {
-              console.log('refreshing');
-              queryClient.invalidateQueries(['tracked', searchString]);
-              setRefresh(oldrefresh => !oldrefresh);
-            }}
-          />
-        }
         renderItem={item => (
           <ListViewItem
             tvShow={item.item}
@@ -561,7 +554,7 @@ function WatchlistScreen({ darkMode, refresh, setRefresh }) {
         inputStyle={{ backgroundColor: colors.header }}
         inputContainerStyle={{ backgroundColor: colors.header }}
       />
-      {queryTrackedTVShows.isLoading ? <ActivityIndicator /> : listViewContent}
+      {isLoading ? <ActivityIndicator /> : listViewContent}
     </View>
   );
 }
@@ -609,7 +602,7 @@ function SettingsScreen({
     <View style={{ ...styles.flatlistView, flex: 8 }}>
       <View style={{ ...styles.settingsItem }}>
         <View style={styles.settingsItemIconStyle}>
-          <Ionicons name="ios-color-palette" size={30} color={colors.text} />
+          <Ionicons name="ios-color-palette" size={25} color={colors.text} />
         </View>
         <Text style={styles.settingsSubTitleText}>Theme</Text>
         <View style={{ flex: 2 }}></View>
@@ -627,9 +620,9 @@ function SettingsScreen({
         />
       </View>
       <View style={{ ...styles.settingsItem }}>
-        <View style={styles.settingsItemIconStyle}>
+        <View style={{ ...styles.settingsItemIconStyle }}>
           <Text>
-            <Ionicons name="ios-notifications" size={30} color={colors.text} />
+            <Ionicons name="ios-notifications" size={25} color={colors.text} />
           </Text>
         </View>
         <Text style={styles.settingsSubTitleText}>Notifications (Save to confirm changes)</Text>
@@ -693,7 +686,7 @@ const App = () => {
   const [emailAddress, setEmailAddress] = useState('');
   const [wantsEmailNotifications, setWantsEmailNotifications] = useState(false);
   const [wantsMobileNotifications, setWantsMobileNotifications] = useState(false);
-  const [refresh, setRefresh] = useState(false);
+  const [refresh, setRefresh] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const toggleDarkMode = () => setDarkMode(previousState => !previousState);
@@ -994,14 +987,12 @@ const makeStyles = (colors: any) =>
       color: colors.text,
       height: 50,
       textAlignVertical: 'center',
-      paddingLeft: 10,
       flex: 8,
       fontStyle: 'italic',
     },
     settingsSubTitleText: {
       fontWeight: 'bold',
       color: colors.text,
-      paddingLeft: 10,
       flex: 8,
       textAlignVertical: 'center',
     },
