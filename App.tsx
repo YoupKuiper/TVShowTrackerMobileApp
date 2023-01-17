@@ -607,18 +607,15 @@ function SettingsScreen({
 
   return (
     <View style={{ ...styles.flatlistView, flex: 8 }}>
-      <Text
-        style={{
-          paddingLeft: 10,
-          fontWeight: 'bold',
-          color: colors.text,
-          flex: 0.5,
-          textAlignVertical: 'center',
-          backgroundColor: 'rgb(150,150,150)',
-        }}>
-        Theme
-      </Text>
-      <View style={{ ...styles.settingsItem, borderTopColor: colors.border, borderTopWidth: 1 }}>
+      <View style={{ ...styles.settingsItem }}>
+        <View style={styles.settingsItemIconStyle}>
+          <Ionicons name="ios-color-palette" size={30} color={colors.text} />
+        </View>
+        <Text style={styles.settingsSubTitleText}>Theme</Text>
+        <View style={{ flex: 2 }}></View>
+      </View>
+      <View style={{ ...styles.settingsItem }}>
+        <View style={{ flex: 1 }} />
         <Text style={styles.settingsText}>Dark mode</Text>
         <Switch
           trackColor={{ false: '#767577', true: '#81b0ff' }}
@@ -626,20 +623,20 @@ function SettingsScreen({
           // ios_backgroundColor="#3e3e3e"
           onValueChange={toggleDarkMode}
           value={darkMode}
+          style={{ flex: 2 }}
         />
       </View>
-      <Text
-        style={{
-          paddingLeft: 10,
-          fontWeight: 'bold',
-          color: colors.text,
-          flex: 0.5,
-          textAlignVertical: 'center',
-          backgroundColor: 'rgb(150,150,150)',
-        }}>
-        Notifications (Save to confirm changes)
-      </Text>
-      <View style={{ ...styles.settingsItem, borderTopColor: colors.border, borderTopWidth: 1 }}>
+      <View style={{ ...styles.settingsItem }}>
+        <View style={styles.settingsItemIconStyle}>
+          <Text>
+            <Ionicons name="ios-notifications" size={30} color={colors.text} />
+          </Text>
+        </View>
+        <Text style={styles.settingsSubTitleText}>Notifications (Save to confirm changes)</Text>
+        <View style={{ flex: 2 }} />
+      </View>
+      <View style={{ ...styles.settingsItem }}>
+        <View style={{ flex: 1 }} />
         <Text style={styles.settingsText}>Email Notifications</Text>
         <Switch
           trackColor={{ false: '#767577', true: '#81b0ff' }}
@@ -647,9 +644,11 @@ function SettingsScreen({
           // ios_backgroundColor="#3e3e3e"
           onValueChange={() => setWantsEmailNotifications(prevState => !prevState)}
           value={wantsEmailNotifications}
+          style={{ flex: 2 }}
         />
       </View>
       <View style={styles.settingsItem}>
+        <View style={{ flex: 1 }} />
         <Text style={styles.settingsText}>Push Notifications</Text>
         <Switch
           trackColor={{ false: '#767577', true: '#81b0ff' }}
@@ -657,6 +656,7 @@ function SettingsScreen({
           // ios_backgroundColor="#3e3e3e"
           onValueChange={() => setWantsMobileNotifications(prevState => !prevState)}
           value={wantsMobileNotifications}
+          style={{ flex: 2 }}
         />
       </View>
       <View
@@ -965,6 +965,12 @@ const makeStyles = (colors: any) =>
       marginBottom: 30,
       color: colors.text,
     },
+    settingsItemIconStyle: {
+      flex: 1,
+      alignItems: 'center',
+      textAlignVertical: 'center',
+      justifyContent: 'center',
+    },
     loginBtn: {
       width: '80%',
       height: 50,
@@ -989,10 +995,17 @@ const makeStyles = (colors: any) =>
       height: 50,
       textAlignVertical: 'center',
       paddingLeft: 10,
-      flex: 4,
+      flex: 8,
       fontStyle: 'italic',
     },
-    settingsItem: { flexDirection: 'row', borderBottomColor: colors.border, borderBottomWidth: 1 },
+    settingsSubTitleText: {
+      fontWeight: 'bold',
+      color: colors.text,
+      paddingLeft: 10,
+      flex: 8,
+      textAlignVertical: 'center',
+    },
+    settingsItem: { flexDirection: 'row', height: 50 },
   });
 
 export default App;
