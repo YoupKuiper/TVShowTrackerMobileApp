@@ -34,6 +34,7 @@ export const getTrackedTVShows = async (searchString: string): Promise<any> => {
 export const getPopularTVShows = async (title: string = ''): Promise<any> => {
   // If title is empty, all popular shows will be fetched
   try {
+    console.debug('getting popular');
     const tvShows = await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/SearchTVShows`, {
       method: 'POST',
       body: JSON.stringify({ searchString: title }),
@@ -96,5 +97,18 @@ export const updateMobileNotificationsToken = async (
     //   text1: 'Failed',
     //   text2: 'Failed to set up mobile notifications',
     // });
+  }
+};
+
+export const verifyGoogleLoginToken = async token => {
+  try {
+    return await fetcher(`${TV_SHOW_TRACKER_API_BASE_URL}/Login`, {
+      method: 'POST',
+      body: JSON.stringify({
+        googleIdToken: token,
+      }),
+    });
+  } catch (error) {
+    console.log(error);
   }
 };

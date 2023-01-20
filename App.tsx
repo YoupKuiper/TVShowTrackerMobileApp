@@ -11,14 +11,22 @@
 import { TV_SHOW_TRACKER_API_BASE_URL } from '@env';
 import messaging from '@react-native-firebase/messaging';
 import { NavigationContainer, useTheme } from '@react-navigation/native';
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import React, { useEffect, useState } from 'react';
+import { focusManager, QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import React, { useEffect, useRef, useState } from 'react';
 import { check, PERMISSIONS, requestNotifications, RESULTS } from 'react-native-permissions';
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 
 import {
   ActivityIndicator,
+  AppState,
+  AppStateStatus,
   Image,
   Linking,
+  Platform,
   StatusBar,
   StyleSheet,
   Switch,
@@ -45,6 +53,7 @@ import {
   getUserForToken,
   updateMobileNotificationsToken,
   updateSettings,
+  verifyGoogleLoginToken,
 } from './api';
 
 const LoginScreen = ({
@@ -57,6 +66,7 @@ const LoginScreen = ({
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isForgotPasswordForm, setIsForgotPasswordForm] = useState(false);
+  const [isSigninInProgress, setIsSigninInProgress] = useState(false);
 
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -85,6 +95,35 @@ const LoginScreen = ({
     setIsLoading(false);
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      setIsLoading(true);
+      setIsSigninInProgress(true);
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const { idToken } = await GoogleSignin.signIn();
+
+      //Send token to backend to verify
+      const response: any = await verifyGoogleLoginToken(idToken);
+      await AsyncStorage.setItem(JWT_TOKEN_KEY, response.token);
+      setEmailAddress(response.emailAddress);
+      setWantsEmailNotifications(response.wantsEmailNotifications);
+      setWantsMobileNotifications(response.wantsMobileNotifications);
+      setIsloggedIn(true);
+    } catch (error) {
+      console.log(error);
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled the login flow
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // operation (e.g. sign in) is in progress already
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        // play services not available or outdated
+      } else {
+        // some other error happened
+      }
+    }
+    setIsLoading(false);
+  };
+
   const handleLogin = async () => {
     try {
       // login api call here
@@ -98,6 +137,7 @@ const LoginScreen = ({
       setWantsEmailNotifications(response.wantsEmailNotifications);
       setWantsMobileNotifications(response.wantsMobileNotifications);
       setIsloggedIn(true);
+      focusManager.setFocused(true);
       try {
         const mobileNotificationsToken = await messaging().getToken();
         updateMobileNotificationsToken(mobileNotificationsToken, response.token);
@@ -184,6 +224,13 @@ const LoginScreen = ({
           Forgot Password?
         </Text>
       </TouchableOpacity>
+      <GoogleSigninButton
+        style={{ width: 192, height: 48 }}
+        size={GoogleSigninButton.Size.Wide}
+        color={GoogleSigninButton.Color.Dark}
+        onPress={signInWithGoogle}
+        disabled={isSigninInProgress}
+      />
       <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
         <Text style={styles.buttonText}>LOGIN</Text>
       </TouchableOpacity>
@@ -361,7 +408,7 @@ class ListViewItem extends PureComponent<any> {
   }
 }
 
-function SearchScreen({ darkMode, refresh, setRefresh }) {
+function SearchScreen({ darkMode, refresh, setRefresh, isLoggedIn }) {
   const { colors } = useTheme();
   const [searchString, setsearchString] = useState('');
   const styles = makeStyles(colors);
@@ -380,6 +427,11 @@ function SearchScreen({ darkMode, refresh, setRefresh }) {
       staleTime: 60000,
     },
   );
+
+  useEffect(() => {
+    // Refetch after a new login
+    refetch();
+  }, [isLoggedIn, refetch]);
 
   const isAlreadyInTrackedList = (tvShow, trackedTVShows) => {
     if (trackedTVShows) {
@@ -584,7 +636,11 @@ function SettingsScreen({
   }, [toggleDarkMode, wantsEmailNotifications, wantsMobileNotifications]);
 
   const handleLogout = async () => {
-    await AsyncStorage.setItem(JWT_TOKEN_KEY, '');
+    try {
+      await AsyncStorage.setItem(JWT_TOKEN_KEY, '');
+      await GoogleSignin.revokeAccess();
+      await GoogleSignin.signOut();
+    } catch (error) {}
     setIsloggedIn(false);
   };
 
@@ -768,9 +824,25 @@ const App = () => {
         handleEmailVerification(url);
       }
     });
+
+    const subscription = AppState.addEventListener('change', onAppStateChange);
+
     return () => {
       linkingEvent.remove();
+      subscription.remove();
     };
+  }, []);
+
+  function onAppStateChange(status: AppStateStatus) {
+    if (Platform.OS !== 'web') {
+      focusManager.setFocused(status === 'active');
+    }
+  }
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '79713360547-0h68re2tj23c7gk6pglke4nto9bvaagm.apps.googleusercontent.com',
+    });
   }, []);
 
   useEffect(() => {
@@ -879,7 +951,12 @@ const App = () => {
               <Tab.Screen
                 name="Search"
                 children={() => (
-                  <SearchScreen darkMode={darkMode} refresh={refresh} setRefresh={setRefresh} />
+                  <SearchScreen
+                    darkMode={darkMode}
+                    refresh={refresh}
+                    setRefresh={setRefresh}
+                    isLoggedIn={isLoggedIn}
+                  />
                 )}
               />
               <Tab.Screen
